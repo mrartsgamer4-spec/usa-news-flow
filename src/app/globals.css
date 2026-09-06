@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+    }
+
+    body {
+        background-color: #ffffff;
+        color: #111111;
+        font-family: var(--font-sans), system-ui, sans-serif;
+    }
+}
+
+/* Custom News Theme Colors & Fonts */
+.font-serif {
+    font-family: var(--font-merriweather), Georgia, serif;
+}
+
+.font-sans {
+    font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+.bg-news-red {
+    background-color: #cc0000;
+}
+
+.text-news-red {
+    color: #cc0000;
+}
+
+.border-news-red {
+    border-color: #cc0000;
+}
+
+.bg-news-black {
+    background-color: #111111;
+}
+
+.text-news-black {
+    color: #111111;
+}
+
+.border-news-black {
+    border-color: #111111;
+}
+
+.bg-news-lightGray {
+    background-color: #f4f4f4;
+}
+
+.text-news-gray {
+    color: #555555;
+}
+
+.border-news-border {
+    border-color: #e5e5e5;
+}
+
+/* Breaking News Marquee Animation */
+@keyframes marquee {
+    0% {
+        transform: translateX(100%);
+    }
+
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+.animate-marquee {
+    display: inline-block;
+    animation: marquee 25s linear infinite;
+}
+
+.animate-marquee:hover {
+    animation-play-state: paused;
+}
