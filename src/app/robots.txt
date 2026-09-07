@@ -1,12 +1,7 @@
-import { MetadataRoute } from 'next'
+User-agent: *
+Allow: /
 
-export default function robots(): MetadataRoute.Robots {
-  return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-      disallow: ['/api/', '/admin/'], // যে পেজগুলো ইনডেক্স করাতে চান না
-    },
-    sitemap: 'https://usanewsflow.com/sitemap.xml',
-  }
-}
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://usanewsflow.com/sitemap.xml
