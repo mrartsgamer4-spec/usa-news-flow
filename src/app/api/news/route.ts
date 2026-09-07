@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { mockNewsData } from '@/lib/mockData';
+import { NextResponse, NextRequest } from 'next/server';
+import { MockNewsData } from '@/lib/mockData';
 
 export async function GET(request: NextRequest) {
     try {
@@ -9,60 +9,55 @@ export async function GET(request: NextRequest) {
         const limit = searchParams.get('limit');
         const search = searchParams.get('search');
 
-        let result = [...mockNewsData];
+        // ১. অবজেক্টের ভেতরের সব অ্যারে একত্র করে একটি একক অ্যারে তৈরি করা
+        let result = [
+            MockNewsData.heroArticle,
+            ...(MockNewsData.topStories || []),
+            ...(MockNewsData.middleArticles || []),
+            ...(MockNewsData.popularArticles || []),
+        ].filter(Boolean); // null বা undefined উপাদানগুলো দূর করার জন্য
 
-        // ১. নির্দিষ্ট কোনো নিউজের বিস্তারিত পেতে (Slug অনুযায়ী)
+        // ২. নির্দিষ্ট কোনো নিউজের বিস্তারিত পেতে (slug অনুযায়ী)
         if (slug) {
             const singleNews = result.find((item) => item.slug === slug);
             if (!singleNews) {
                 return NextResponse.json(
-                    { success: false, message: 'সংবাদটি পাওয়া যায়নি' },
+                    { error: 'সংবাদটি পাওয়া যায়নি' },
                     { status: 404 }
                 );
             }
-            return NextResponse.json({ success: true, data: singleNews }, { status: 200 });
+            return NextResponse.json(singleNews);
         }
 
-        // ২. নির্দিষ্ট ক্যাটাগরির সংবাদ ফিল্টার করতে
+        // ৩. ক্যাটাগরি অনুযায়ী ফিল্টার
         if (category) {
             result = result.filter(
-                (item) => item.category.toLowerCase() === category.toLowerCase()
+                (item) => item.category?.toLowerCase() === category.toLowerCase()
             );
         }
 
-        // ৩. কিওয়ার্ড দিয়ে অনুসন্ধান করতে
+        // ৪. সার্চ কিওয়ার্ড অনুযায়ী ফিল্টার
         if (search) {
             const query = search.toLowerCase();
             result = result.filter(
                 (item) =>
-                    item.title.toLowerCase().includes(query) ||
-                    item.content?.toLowerCase().includes(query)
+                    item.title?.toLowerCase().includes(query) ||
+                    item.summary?.toLowerCase().includes(query)
             );
         }
 
-        // ৪. খবরের সীমাবদ্ধতা নির্ধারণ করতে (Limit)
+        // ৫. লিমিট অনুযায়ী ডাটা পাঠানো
         if (limit) {
-            const limitNum = parseInt(limit, 10);
-            if (!isNaN(limitNum)) {
-                result = result.slice(0, limitNum);
+            const parsedLimit = parseInt(limit, 10);
+            if (!isNaN(parsedLimit) && parsedLimit > 0) {
+                result = result.slice(0, parsedLimit);
             }
         }
 
-        return NextResponse.json(
-            {
-                success: true,
-                total: result.length,
-                data: result,
-            },
-            { status: 200 }
-        );
+        return NextResponse.json(result);
     } catch (error) {
         return NextResponse.json(
-            {
-                success: false,
-                message: 'ডাটা সার্ভার থেকে লোড হতে সমস্যা হয়েছে',
-                error: error instanceof Error ? error.message : 'Unknown error',
-            },
+            { error: 'Internal Server Error' },
             { status: 500 }
         );
     }
