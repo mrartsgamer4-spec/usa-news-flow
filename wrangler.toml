@@ -7,8 +7,3 @@ pages_build_output_dir = ".vercel/output/static"
 binding = "DB"
 database_name = "usa-news-db"
 database_id = "312067b3-e91e-4663-beb5-3d56e10ea7a4"
-
-# Cloudflare R2 Bucket Binding
-[[r2_buckets]]
-binding = "MEDIA_BUCKET"
-bucket_name = "usa-news-flow-media"
