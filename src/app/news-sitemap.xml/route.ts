@@ -16,7 +16,7 @@ function escapeXml(unsafe: string): string {
 export async function GET() {
     const articles = await getPublishedArticles();
 
-    // Google News Sitemap strictly requires articles published within the last 48 hours
+    // Strictly strictly articles published within the last 48 hours
     const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
     const recentArticles = articles.filter((article) => {
@@ -24,12 +24,9 @@ export async function GET() {
         return pubDate >= fortyEightHoursAgo;
     });
 
-    // If no recent articles, fall back to the 10 most recent articles to avoid empty sitemap errors
-    const targetArticles = recentArticles.length > 0 ? recentArticles : articles.slice(0, 10);
-
-    const xmlItems = targetArticles
+    const xmlItems = recentArticles
         .map((art) => {
-            const articleUrl = getArticleUrl(art.category, art.slug);
+            const articleUrl = art.canonical_url || getArticleUrl(art.category, art.slug);
             const pubDate = new Date(art.published_at).toISOString();
 
             return `

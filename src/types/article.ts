@@ -36,6 +36,7 @@ export interface Author {
     name: string;
     slug: string;
     bio?: string;
+    avatar?: string;
     avatar_url?: string;
     role?: string;
 }

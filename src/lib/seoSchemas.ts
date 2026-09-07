@@ -1,17 +1,14 @@
 import { siteConfig } from './siteConfig';
 import { Article } from '@/types/article';
-import { getArticleUrl, getAuthorUrl, getCategoryUrl } from './urls';
+import { getArticleUrl, getAuthorUrl } from './urls';
 
 export interface BreadcrumbItem {
     name: string;
     url: string;
 }
 
-/**
- * জেনারেট করে NewsArticle Schema (গুগল নিউজের জন্য অত্যন্ত গুরুত্বপূর্ণ)
- */
 export function generateNewsArticleSchema(article: Article) {
-    const articleUrl = getArticleUrl(article.category, article.slug);
+    const articleUrl = article.canonical_url || getArticleUrl(article.category, article.slug);
     const authorUrl = getAuthorUrl(article.author_slug || 'editorial-team');
     const imageUrl = article.featured_image || siteConfig.defaultOgImage;
 
@@ -51,9 +48,6 @@ export function generateNewsArticleSchema(article: Article) {
     };
 }
 
-/**
- * জেনারেট করে BreadcrumbList Schema (সার্চ রেজাল্টে সুন্দর নেভিগেশন লিংক দেখানোর জন্য)
- */
 export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
     return {
         '@context': 'https://schema.org',
@@ -67,9 +61,6 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
     };
 }
 
-/**
- * জেনারেট করে Organization / NewsMediaOrganization Schema (ওয়েবসাইট ব্র্যান্ড ট্রাস্ট বাড়ানোর জন্য)
- */
 export function generateOrganizationSchema() {
     return {
         '@context': 'https://schema.org',
@@ -83,9 +74,6 @@ export function generateOrganizationSchema() {
     };
 }
 
-/**
- * জেনারেট করে WebSite Schema (গুগল সাইট সার্চ বক্স সাপোর্ট নিশ্চিত করার জন্য)
- */
 export function generateWebSiteSchema() {
     return {
         '@context': 'https://schema.org',
