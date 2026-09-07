@@ -9,37 +9,68 @@ export interface Article {
     publishedAt: string;
 }
 
-const sampleArticle: Article = {
-    id: '1',
-    title: 'Breaking News: Latest Updates and Developments Across the USA',
-    slug: 'example-news-title',
-    summary: 'Stay informed with the latest updates on current events and major stories.',
-    content: '<p>This is the full article content highlighting major developments and insights.</p>',
-    category: 'us-news',
-    imageUrl: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f',
-    publishedAt: new Date().toISOString(),
-};
+export interface NewsDataStructure {
+    heroArticle: Article;
+    topStories: Article[];
+    middleArticles: Article[];
+    popularArticles: Article[];
+}
 
-export const mockArticles: Article[] = [
-    sampleArticle,
-    { ...sampleArticle, id: '2', title: 'Technology Trends in 2026', slug: 'tech-trends-2026', category: 'technology' },
-    { ...sampleArticle, id: '3', title: 'Global Market & Business Insights', slug: 'market-insights', category: 'business' },
-    { ...sampleArticle, id: '4', title: 'Sports & Entertainment Highlights', slug: 'sports-highlights', category: 'sports' },
-];
-
-export const MockNewsData = {
-    heroArticle: sampleArticle,
+export const MockNewsData: NewsDataStructure = {
+    heroArticle: {
+        id: '1',
+        title: 'Breaking News: Major Policy Changes Announced Across the USA',
+        slug: 'breaking-news-major-policy-changes',
+        summary: 'This is the lead article content highlighting recent policy changes and key national insights.',
+        content: 'Full detailed content about the major policy changes announced recently across the nation...',
+        category: 'politics',
+        imageUrl: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800',
+        publishedAt: new Date().toISOString()
+    },
     topStories: [
-        { ...sampleArticle, id: 'top-1', title: 'Top Story 1: Major Policy Changes Announced' },
-        { ...sampleArticle, id: 'top-2', title: 'Top Story 2: Global Markets React to Economic Shift' },
-        { ...sampleArticle, id: 'top-3', title: 'Top Story 3: Technological Breakthroughs Ahead' },
+        {
+            id: '2',
+            title: 'Global Markets React to Economic Shifts',
+            slug: 'global-markets-react-economic-shifts',
+            summary: 'Financial updates and market reactions following the latest economic reports.',
+            content: 'Detailed discussion regarding global market reaction, stock trends, and future predictions...',
+            category: 'business',
+            imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600',
+            publishedAt: new Date().toISOString()
+        },
+        {
+            id: '3',
+            title: 'Technological Breakthroughs in AI for 2026',
+            slug: 'technological-breakthroughs-ai-2026',
+            summary: 'How recent artificial intelligence developments are reshaping industries worldwide.',
+            content: 'Full analysis on the impact of AI advancements across different industry sectors...',
+            category: 'technology',
+            imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600',
+            publishedAt: new Date().toISOString()
+        }
     ],
     middleArticles: [
-        { ...sampleArticle, id: 'mid-1', title: 'Middle Story 1: Insights into Future Industry Growth' },
-        { ...sampleArticle, id: 'mid-2', title: 'Middle Story 2: Community Development and News' },
+        {
+            id: '4',
+            title: 'Healthcare Reforms: What Citizens Need to Know',
+            slug: 'healthcare-reforms-citizens-guide',
+            summary: 'A breakdown of upcoming health regulations and public benefits.',
+            content: 'In-depth guide explaining how healthcare reform affects insurance and medical access...',
+            category: 'health',
+            imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=600',
+            publishedAt: new Date().toISOString()
+        }
     ],
     popularArticles: [
-        { ...sampleArticle, id: 'pop-1', title: 'Popular Story 1: Trending Analysis and Opinions' },
-        { ...sampleArticle, id: 'pop-2', title: 'Popular Story 2: Key Highlights of the Week' },
-    ],
+        {
+            id: '5',
+            title: 'Sports Highlights: National Tournament Results',
+            slug: 'sports-highlights-national-tournament',
+            summary: 'Key moments and scores from the championship games this weekend.',
+            content: 'Comprehensive review of top scoring plays, standout players, and championship standings...',
+            category: 'sports',
+            imageUrl: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=600',
+            publishedAt: new Date().toISOString()
+        }
+    ]
 };
