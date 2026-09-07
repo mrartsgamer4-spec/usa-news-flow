@@ -1,98 +1,114 @@
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
+export const runtime = 'edge';
 
-interface SingleNewsPageProps {
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import { mockArticles } from '@/lib/mockData';
+
+interface Props {
     params: Promise<{
         category: string;
         slug: string;
     }>;
 }
 
-export async function generateMetadata({ params }: SingleNewsPageProps) {
-    const resolvedParams = await params;
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+export async function generateMetadata({ params }: Props) {
+    const { slug } = await params;
+    const article = mockArticles.find((a) => a.slug === slug);
 
-    const res = await fetch(`${baseUrl}/api/news?slug=${resolvedParams.slug}`, {
-        cache: 'no-store',
-    });
-    const data = await res.json();
-
-    if (!data.success || !data.data) {
-        return { title: 'News Not Found' };
+    if (!article) {
+        return {
+            title: 'Article Not Found',
+        };
     }
 
     return {
-        title: data.data.title,
-        description: data.data.summary || data.data.content?.substring(0, 160),
+        title: `${article.title} - USA News Flow`,
+        description: article.summary,
     };
 }
 
-export default async function SingleNewsPage({ params }: SingleNewsPageProps) {
-    const resolvedParams = await params;
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+export default async function ArticlePage({ params }: Props) {
+    const { category, slug } = await params;
+    const article = mockArticles.find(
+        (a) => a.slug === slug && a.category.toLowerCase() === category.toLowerCase()
+    );
 
-    // নতুন API এর মাধ্যমে খবর ফেচ করা
-    const res = await fetch(`${baseUrl}/api/news?slug=${resolvedParams.slug}`, {
-        cache: 'no-store',
-    });
-    const result = await res.json();
-
-    if (!result.success || !result.data) {
+    if (!article) {
         notFound();
     }
 
-    const newsItem = result.data;
+    const relatedArticles = mockArticles
+        .filter((a) => a.category === article.category && a.id !== article.id)
+        .slice(0, 3);
 
     return (
-        <article className="max-w-4xl mx-auto px-4 py-8">
-            {/* ক্যাটাগরি ও ব্রেডক্রাম্ব */}
-            <div className="mb-4">
-                <Link
-                    href={`/news/category/${newsItem.category.toLowerCase()}`}
-                    className="text-sm font-semibold uppercase tracking-wider text-blue-600 hover:underline"
-                >
-                    {newsItem.category}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <nav className="text-sm font-medium text-gray-500 mb-4">
+                <Link href="/" className="hover:text-blue-600">Home</Link>
+                <span className="mx-2">/</span>
+                <Link href={`/news/category/${article.category.toLowerCase()}`} className="hover:text-blue-600 capitalize">
+                    {article.category}
                 </Link>
-            </div>
+            </nav>
 
-            {/* শিরোনাম */}
-            <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight text-gray-900">
-                {newsItem.title}
-            </h1>
+            <article className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-6 sm:p-8">
+                    <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4">
+                        <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded capitalize">
+                            {article.category}
+                        </span>
+                        <span>•</span>
+                        <time>{article.publishedAt}</time>
+                        <span>•</span>
+                        <span>By {article.author}</span>
+                    </div>
 
-            {/* তারিখ ও তথ্য */}
-            <div className="flex items-center text-sm text-gray-500 mb-6 border-b pb-4">
-                <span>{newsItem.publishedAt || 'Recently Published'}</span>
-                {newsItem.author && (
-                    <>
-                        <span className="mx-2">•</span>
-                        <span>By {newsItem.author}</span>
-                    </>
-                )}
-            </div>
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 leading-tight">
+                        {article.title}
+                    </h1>
 
-            {/* ছবি (যদি থাকে) */}
-            {newsItem.imageUrl && (
-                <div className="mb-8">
-                    <img
-                        src={newsItem.imageUrl}
-                        alt={newsItem.title}
-                        className="w-full h-auto rounded-lg object-cover max-h-[500px]"
-                    />
+                    <div className="relative h-80 sm:h-96 w-full mb-8 rounded-lg overflow-hidden bg-gray-100">
+                        <Image
+                            src={article.imageUrl}
+                            alt={article.title}
+                            fill
+                            className="object-cover"
+                            priority
+                        />
+                    </div>
+
+                    <div className="prose max-w-none text-gray-800 text-lg leading-relaxed space-y-4">
+                        <p className="font-semibold text-gray-900">{article.summary}</p>
+                        <p>{article.content}</p>
+                    </div>
                 </div>
-            )}
+            </article>
 
-            {/* সারসংক্ষেপ */}
-            {newsItem.summary && (
-                <p className="text-xl font-medium text-gray-700 mb-6 italic leading-relaxed border-l-4 border-blue-600 pl-4">
-                    {newsItem.summary}
-                </p>
+            {relatedArticles.length > 0 && (
+                <section className="mt-12">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Related News</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {relatedArticles.map((rel) => (
+                            <Link
+                                key={rel.id}
+                                href={`/news/${rel.category.toLowerCase()}/${rel.slug}`}
+                                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                            >
+                                <div className="relative h-36 w-full mb-3 rounded overflow-hidden bg-gray-100">
+                                    <Image
+                                        src={rel.imageUrl}
+                                        alt={rel.title}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                </div>
+                                <h3 className="font-semibold text-gray-900 line-clamp-2">{rel.title}</h3>
+                            </Link>
+                        ))}
+                    </div>
+                </section>
             )}
-
-            {/* মূল কনটেন্ট */}
-            <div className="prose max-w-none text-gray-800 leading-relaxed text-lg whitespace-pre-line">
-                {newsItem.content}
-            </div>
-        </article>
+        </div>
     );
 }
