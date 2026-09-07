@@ -32,6 +32,13 @@ CREATE TABLE IF NOT EXISTS articles (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Automatic Updated At Trigger
+CREATE TRIGGER IF NOT EXISTS update_articles_timestamp 
+AFTER UPDATE ON articles
+BEGIN
+    UPDATE articles SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
 -- Indexing
 CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug);
 CREATE INDEX IF NOT EXISTS idx_articles_category ON articles(category);

@@ -22,6 +22,7 @@ export interface Article {
     image_caption?: string;
     author: string;
     author_id?: string;
+    author_slug?: string;
     status: 'draft' | 'published' | 'archived';
     breaking?: boolean;
     meta_title?: string;
@@ -34,45 +35,32 @@ export interface Article {
 }
 
 /**
- * Fetch all published articles from Cloudflare D1
+ * Fetch all published articles with Author details
  */
-export async function getPublishedArticles(): Promise<Article[]> {
+export async function getPublishedArticles(limit: number = 50, offset: number = 0): Promise<Article[]> {
     try {
         const { env } = getRequestContext();
-        if (!env.DB) {
-            console.warn('Cloudflare D1 binding (DB) is missing.');
+        if (!env?.DB) {
+            console.warn('D1 Database binding (DB) is missing.');
             return [];
         }
 
         const query = `
             SELECT 
-                a.id,
-                a.title,
-                a.slug,
-                a.category,
-                a.sub_category,
-                a.excerpt,
-                a.content,
-                a.featured_image,
-                a.image_alt,
-                a.image_caption,
+                a.id, a.title, a.slug, a.category, a.sub_category,
+                a.excerpt, a.content, a.featured_image, a.image_alt, a.image_caption,
                 COALESCE(auth.name, 'Editorial Team') AS author,
-                a.author_id,
-                a.status,
-                a.meta_title,
-                a.meta_description,
-                a.canonical_url,
-                a.source_name,
-                a.source_url,
-                a.published_at,
-                a.updated_at
+                COALESCE(auth.slug, 'editorial-team') AS author_slug,
+                a.author_id, a.status, a.meta_title, a.meta_description,
+                a.canonical_url, a.source_name, a.source_url, a.published_at, a.updated_at
             FROM articles a
             LEFT JOIN authors auth ON a.author_id = auth.id
-            WHERE a.status = 'published'
+            WHERE LOWER(a.status) = 'published'
             ORDER BY a.published_at DESC
+            LIMIT ? OFFSET ?
         `;
 
-        const { results } = await env.DB.prepare(query).all<Article>();
+        const { results } = await env.DB.prepare(query).bind(limit, offset).all<Article>();
         return results || [];
     } catch (error) {
         console.error('Error fetching published articles from D1:', error);
@@ -81,59 +69,32 @@ export async function getPublishedArticles(): Promise<Article[]> {
 }
 
 /**
- * Fetch a single article by slug
+ * Fetch articles directly by Category from Database
  */
-export async function getArticleBySlug(slug: string): Promise<Article | null> {
+export async function getArticlesByCategory(category: string, limit: number = 20, offset: number = 0): Promise<Article[]> {
     try {
         const { env } = getRequestContext();
-        if (!env.DB) return null;
+        if (!env?.DB) return [];
 
         const query = `
             SELECT 
-                a.id,
-                a.title,
-                a.slug,
-                a.category,
-                a.sub_category,
-                a.excerpt,
-                a.content,
-                a.featured_image,
-                a.image_alt,
-                a.image_caption,
+                a.id, a.title, a.slug, a.category, a.sub_category,
+                a.excerpt, a.content, a.featured_image, a.image_alt, a.image_caption,
                 COALESCE(auth.name, 'Editorial Team') AS author,
-                a.author_id,
-                a.status,
-                a.meta_title,
-                a.meta_description,
-                a.canonical_url,
-                a.source_name,
-                a.source_url,
-                a.published_at,
-                a.updated_at
+                COALESCE(auth.slug, 'editorial-team') AS author_slug,
+                a.author_id, a.status, a.meta_title, a.meta_description,
+                a.canonical_url, a.source_name, a.source_url, a.published_at, a.updated_at
             FROM articles a
             LEFT JOIN authors auth ON a.author_id = auth.id
-            WHERE a.slug = ? AND a.status = 'published'
-            LIMIT 1
+            WHERE LOWER(a.status) = 'published' AND LOWER(REPLACE(a.category, ' ', '-')) = LOWER(?)
+            ORDER BY a.published_at DESC
+            LIMIT ? OFFSET ?
         `;
 
-        const article = await env.DB.prepare(query).bind(slug).first<Article>();
-        return article || null;
+        const { results } = await env.DB.prepare(query).bind(category, limit, offset).all<Article>();
+        return results || [];
     } catch (error) {
-        console.error(`Error fetching article by slug (${slug}):`, error);
-        return null;
+        console.error(`Error fetching category (${category}) from D1:`, error);
+        return [];
     }
-}
-
-/**
- * Fetch articles by category
- */
-export async function getArticlesByCategory(categorySlug: string): Promise<Article[]> {
-    const allArticles = await getPublishedArticles();
-    return allArticles.filter(
-        (article) =>
-            article.category
-                .toLowerCase()
-                .replace(/[^a-z0-9\s-]/g, '')
-                .replace(/\s+/g, '-') === categorySlug.toLowerCase()
-    );
 }

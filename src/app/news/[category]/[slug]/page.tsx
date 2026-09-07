@@ -82,6 +82,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
     const canonicalUrl = `${siteConfig.url}/news/${resolvedParams.category}/${resolvedParams.slug}`;
     const imageUrl = article.featured_image || siteConfig.ogImage;
+    const authorSlug = article.author_slug || 'editorial-team';
+    const authorUrl = `${siteConfig.url}/author/${authorSlug}`;
 
     // NewsArticle JSON-LD Schema
     const newsArticleSchema = {
@@ -95,6 +97,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         author: {
             '@type': 'Person',
             name: article.author,
+            url: authorUrl,
         },
         publisher: {
             '@type': 'NewsMediaOrganization',
@@ -169,7 +172,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 </p>
                 <div className="flex items-center justify-between text-xs text-gray-500 border-y border-gray-200 py-3">
                     <div>
-                        By <span className="font-bold text-gray-900">{article.author}</span>
+                        By <Link href={`/author/${authorSlug}`} className="font-bold text-gray-900 hover:text-red-600 transition">{article.author}</Link>
                     </div>
                     <div>
                         Published: {new Date(article.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -188,7 +191,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </div>
 
             <div className="prose max-w-none text-gray-800 leading-relaxed space-y-4">
-                <p>{article.content}</p>
+                {article.content.split('\n\n').map((paragraph, index) => (
+                    <p key={index}>{paragraph}</p>
+                ))}
             </div>
         </article>
     );
