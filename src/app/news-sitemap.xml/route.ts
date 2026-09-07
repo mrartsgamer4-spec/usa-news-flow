@@ -1,41 +1,62 @@
+import { siteConfig } from '@/lib/siteConfig';
+import { getPublishedArticles } from '@/lib/newsService';
+import { getArticleUrl } from '@/lib/urls';
+
 export const runtime = 'edge';
 
-import { getPublishedArticles } from '@/lib/newsService';
-import { siteConfig } from '@/lib/siteConfig';
+function escapeXml(unsafe: string): string {
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
 
 export async function GET() {
     const articles = await getPublishedArticles();
 
-    // Google News Sitemap-এ শুধু গত ৪৮ ঘণ্টার আর্টিকেল রাখা রিকমেন্ডেড
-    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
-    const recentArticles = articles.filter(a => new Date(a.published_at) >= twoDaysAgo);
+    // Google News Sitemap strictly requires articles published within the last 48 hours
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
+    const recentArticles = articles.filter((article) => {
+        const pubDate = new Date(article.published_at);
+        return pubDate >= fortyEightHoursAgo;
+    });
+
+    // If no recent articles, fall back to the 10 most recent articles to avoid empty sitemap errors
+    const targetArticles = recentArticles.length > 0 ? recentArticles : articles.slice(0, 10);
+
+    const xmlItems = targetArticles
+        .map((art) => {
+            const articleUrl = getArticleUrl(art.category, art.slug);
+            const pubDate = new Date(art.published_at).toISOString();
+
+            return `
+  <url>
+    <loc>${articleUrl}</loc>
+    <news:news>
+      <news:publication>
+        <news:name>${escapeXml(siteConfig.name)}</news:name>
+        <news:language>${siteConfig.language || 'en'}</news:language>
+      </news:publication>
+      <news:publication_date>${pubDate}</news:publication_date>
+      <news:title>${escapeXml(art.title)}</news:title>
+    </news:news>
+  </url>`;
+        })
+        .join('');
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-  ${recentArticles
-            .map((article) => {
-                const articleUrl = `${siteConfig.url}/news/${article.category.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')}/${article.slug}`;
-                return `
-    <url>
-      <loc>${articleUrl}</loc>
-      <news:news>
-        <news:publication>
-          <news:name>${siteConfig.name}</news:name>
-          <news:language>en</news:language>
-        </news:publication>
-        <news:publication_date>${new Date(article.published_at).toISOString()}</news:publication_date>
-        <news:title>${article.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</news:title>
-      </news:news>
-    </url>`;
-            })
-            .join('')}
+${xmlItems}
 </urlset>`;
 
     return new Response(xml, {
         headers: {
-            'Content-Type': 'application/xml',
-            'Cache-Control': 's-maxage=3600, stale-while-revalidate',
+            'Content-Type': 'application/xml; charset=utf-8',
+            'Cache-Control': 's-maxage=1800, stale-while-revalidate',
         },
     });
 }

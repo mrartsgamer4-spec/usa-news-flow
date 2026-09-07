@@ -1,18 +1,18 @@
 export const siteConfig = {
-    name: "USA News Flow",
-    description: "Latest breaking news, politics, business, technology, sports, and world updates.",
-    url: process.env.NEXT_PUBLIC_SITE_URL || "https://usanewsflow.com",
-    ogImage: "https://usanewsflow.com/og-image.png",
-    publisher: "USA News Flow Media",
-    locale: "en_US",
-    twitterHandle: "@usanewsflow",
+    name: 'USA News Flow',
+    shortName: 'USA News Flow',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://usanewsflow.com',
+    description: 'Your Daily Flow of U.S. News & Insights',
+    locale: 'en_US',
+    language: 'en-US',
+    twitterHandle: '',
+    logo: '/logo.png', // logo প্রপার্টি যুক্ত করা হয়েছে
+    ogImage: '/og-image.jpg',
+    defaultOgImage: '/og-image.jpg', // defaultOgImage প্রপার্টি যুক্ত করা হয়েছে
+    publisher: 'USA News Flow Editorial Team',
+    sameAs: [] as string[], // sameAs প্রপার্টি যুক্ত করা হয়েছে
     links: {
-        twitter: "https://twitter.com/usanewsflow",
-        facebook: "https://facebook.com/usanewsflow",
+        twitter: '',
+        facebook: '',
     },
-};
-
-export const getCanonicalUrl = (path: string = "") => {
-    const cleanedPath = path.startsWith("/") ? path : `/${path}`;
-    return `${siteConfig.url}${cleanedPath}`;
 };

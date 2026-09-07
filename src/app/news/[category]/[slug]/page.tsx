@@ -1,11 +1,15 @@
 export const runtime = 'edge';
 
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getPublishedArticles } from '@/lib/newsService';
+import { notFound } from 'next/navigation';
 import { siteConfig } from '@/lib/siteConfig';
+import { Article } from '@/types/article';
+import { getArticleUrl, getCategoryUrl, getAuthorUrl } from '@/lib/urls';
+import { generateNewsArticleSchema, generateBreadcrumbSchema } from '@/lib/seoSchemas';
+import JsonLd from '@/components/seo/JsonLd';
+import Breadcrumbs from '@/components/seo/Breadcrumbs';
 
 interface ArticlePageProps {
     params: Promise<{
@@ -14,17 +18,43 @@ interface ArticlePageProps {
     }>;
 }
 
-// Helper to fetch single article
-async function getArticle(category: string, slug: string) {
-    const articles = await getPublishedArticles();
-    return articles.find(
-        (a) =>
-            a.slug === slug &&
-            a.category.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') === category.toLowerCase()
-    );
+async function getArticle(category: string, slug: string): Promise<Article | null> {
+    try {
+        if (typeof process !== 'undefined' && process.env) {
+            try {
+                const { getRequestContext } = await import('@cloudflare/next-on-pages');
+                const { env } = getRequestContext();
+                if (env?.DB) {
+                    const article = await env.DB.prepare(
+                        `SELECT a.*, COALESCE(auth.name, 'Editorial Team') as author, auth.slug as author_slug 
+                         FROM articles a 
+                         LEFT JOIN authors auth ON a.author_id = auth.id 
+                         WHERE a.slug = ? LIMIT 1`
+                    ).bind(slug).first<Article>();
+
+                    if (article) return article;
+                }
+            } catch (e) {
+                console.warn('D1 fetch failed in single article page, falling back to API', e);
+            }
+        }
+
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
+        const res = await fetch(`${baseUrl}/api/news?slug=${slug}`, {
+            cache: 'no-store'
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return Array.isArray(data) ? data[0] : (data.article || data);
+        }
+    } catch (err) {
+        console.error('Error loading article:', err);
+    }
+
+    return null;
 }
 
-// Dynamic SEO Metadata Generation
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
     const resolvedParams = await params;
     const article = await getArticle(resolvedParams.category, resolvedParams.slug);
@@ -35,39 +65,32 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
         };
     }
 
-    const canonicalUrl = `${siteConfig.url}/news/${resolvedParams.category}/${resolvedParams.slug}`;
-    const imageUrl = article.featured_image || siteConfig.ogImage;
+    const canonicalUrl = article.canonical_url || getArticleUrl(article.category, article.slug);
+    const imageUrl = article.featured_image || siteConfig.defaultOgImage;
+    const metaTitle = article.meta_title || `${article.title} | ${siteConfig.name}`;
+    const metaDescription = article.meta_description || article.excerpt || article.title;
 
     return {
-        title: article.meta_title || article.title,
-        description: article.meta_description || article.excerpt,
+        title: metaTitle,
+        description: metaDescription,
         alternates: {
             canonical: canonicalUrl,
         },
         openGraph: {
-            type: 'article',
-            title: article.title,
-            description: article.excerpt,
+            title: metaTitle,
+            description: metaDescription,
             url: canonicalUrl,
             siteName: siteConfig.name,
-            locale: siteConfig.locale,
+            images: [{ url: imageUrl }],
+            type: 'article',
             publishedTime: article.published_at,
             modifiedTime: article.updated_at || article.published_at,
-            authors: [article.author],
-            section: article.category,
-            images: [
-                {
-                    url: imageUrl,
-                    alt: article.image_alt || article.title,
-                },
-            ],
         },
         twitter: {
             card: 'summary_large_image',
-            title: article.title,
-            description: article.excerpt,
+            title: metaTitle,
+            description: metaDescription,
             images: [imageUrl],
-            creator: siteConfig.twitterHandle,
         },
     };
 }
@@ -80,121 +103,100 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         notFound();
     }
 
-    const canonicalUrl = `${siteConfig.url}/news/${resolvedParams.category}/${resolvedParams.slug}`;
-    const imageUrl = article.featured_image || siteConfig.ogImage;
+    const canonicalUrl = article.canonical_url || getArticleUrl(article.category, article.slug);
+    const categoryUrl = getCategoryUrl(article.category);
     const authorSlug = article.author_slug || 'editorial-team';
-    const authorUrl = `${siteConfig.url}/author/${authorSlug}`;
 
-    // NewsArticle JSON-LD Schema
-    const newsArticleSchema = {
-        '@context': 'https://schema.org',
-        '@type': 'NewsArticle',
-        headline: article.title,
-        description: article.excerpt,
-        image: [imageUrl],
-        datePublished: article.published_at,
-        dateModified: article.updated_at || article.published_at,
-        author: {
-            '@type': 'Person',
-            name: article.author,
-            url: authorUrl,
-        },
-        publisher: {
-            '@type': 'NewsMediaOrganization',
-            name: siteConfig.name,
-            url: siteConfig.url,
-            logo: {
-                '@type': 'ImageObject',
-                url: `${siteConfig.url}/logo.png`,
-            },
-        },
-        mainEntityOfPage: {
-            '@type': 'WebPage',
-            '@id': canonicalUrl,
-        },
-        articleSection: article.category,
-    };
+    const breadcrumbItems = [
+        { name: 'Home', url: '/' },
+        { name: article.category, url: categoryUrl },
+        { name: article.title, url: canonicalUrl },
+    ];
 
-    // BreadcrumbList JSON-LD Schema
-    const breadcrumbSchema = {
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-            {
-                '@type': 'ListItem',
-                position: 1,
-                name: 'Home',
-                item: siteConfig.url,
-            },
-            {
-                '@type': 'ListItem',
-                position: 2,
-                name: article.category.toUpperCase(),
-                item: `${siteConfig.url}/news/category/${resolvedParams.category}`,
-            },
-            {
-                '@type': 'ListItem',
-                position: 3,
-                name: article.title,
-                item: canonicalUrl,
-            },
-        ],
-    };
+    const newsArticleSchema = generateNewsArticleSchema(article);
+    const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
 
     return (
-        <article className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(newsArticleSchema) }}
-            />
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-            />
+        <>
+            <JsonLd data={[newsArticleSchema, breadcrumbSchema]} />
 
-            <nav className="text-xs text-gray-500 flex items-center gap-2 uppercase tracking-wide">
-                <Link href="/" className="hover:text-red-600">Home</Link>
-                <span>/</span>
-                <Link href={`/news/category/${resolvedParams.category}`} className="hover:text-red-600">
+            <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Visual Breadcrumb UI */}
+                <Breadcrumbs items={breadcrumbItems} />
+
+                {/* Article Category Badge */}
+                <Link href={categoryUrl} className="inline-block bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wider mb-3 hover:bg-red-700 transition">
                     {article.category}
                 </Link>
-            </nav>
 
-            <header className="space-y-4">
-                <span className="bg-red-600 text-white text-xs font-bold px-2.5 py-1 uppercase rounded-xs">
-                    {article.category}
-                </span>
-                <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 leading-tight">
+                {/* Article Title */}
+                <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
                     {article.title}
                 </h1>
-                <p className="text-lg text-gray-600 leading-relaxed font-medium">
-                    {article.excerpt}
-                </p>
-                <div className="flex items-center justify-between text-xs text-gray-500 border-y border-gray-200 py-3">
+
+                {/* Meta Info */}
+                <div className="flex items-center text-sm text-gray-600 border-y border-gray-200 py-3 mb-6 space-x-4">
                     <div>
-                        By <Link href={`/author/${authorSlug}`} className="font-bold text-gray-900 hover:text-red-600 transition">{article.author}</Link>
+                        By{' '}
+                        <Link href={getAuthorUrl(authorSlug)} className="font-semibold text-gray-900 hover:text-red-600 transition">
+                            {article.author || 'Editorial Team'}
+                        </Link>
                     </div>
-                    <div>
-                        Published: {new Date(article.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </div>
+                    <span>•</span>
+                    <time dateTime={article.published_at}>
+                        {new Date(article.published_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                        })}
+                    </time>
                 </div>
-            </header>
 
-            <div className="relative w-full h-[300px] sm:h-[480px] rounded-lg overflow-hidden bg-gray-100">
-                <Image
-                    src={imageUrl}
-                    alt={article.image_alt || article.title}
-                    fill
-                    priority
-                    className="object-cover"
+                {/* Featured Image & Caption */}
+                {article.featured_image && (
+                    <figure className="mb-8">
+                        <div className="relative w-full h-[300px] sm:h-[480px] bg-gray-100 rounded-lg overflow-hidden">
+                            <Image
+                                src={article.featured_image}
+                                alt={article.image_alt || article.title}
+                                fill
+                                priority
+                                className="object-cover"
+                            />
+                        </div>
+                        {article.image_caption && (
+                            <figcaption className="text-xs text-gray-500 mt-2 text-center italic">
+                                {article.image_caption}
+                            </figcaption>
+                        )}
+                    </figure>
+                )}
+
+                {/* Article Body Content */}
+                <div
+                    className="prose prose-lg max-w-none text-gray-800 leading-relaxed space-y-4"
+                    dangerouslySetInnerHTML={{ __html: article.content }}
                 />
-            </div>
 
-            <div className="prose max-w-none text-gray-800 leading-relaxed space-y-4">
-                {article.content.split('\n\n').map((paragraph, index) => (
-                    <p key={index}>{paragraph}</p>
-                ))}
-            </div>
-        </article>
+                {/* News Source Attribution Block */}
+                {article.source_name && (
+                    <div className="mt-8 pt-4 border-t border-gray-200 text-xs text-gray-500 italic">
+                        Source:{' '}
+                        {article.source_url ? (
+                            <a
+                                href={article.source_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-red-600 hover:underline font-medium"
+                            >
+                                {article.source_name}
+                            </a>
+                        ) : (
+                            <span className="font-medium text-gray-700">{article.source_name}</span>
+                        )}
+                    </div>
+                )}
+            </article>
+        </>
     );
 }

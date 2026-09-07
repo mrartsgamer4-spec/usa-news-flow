@@ -1,26 +1,41 @@
 export interface Article {
-    id: string | number;
-    title: string;
+    id: string;
     slug: string;
-    excerpt: string;
+    title: string;
+    excerpt?: string;
     content: string;
+    category: string;
+    subcategory?: string;
     featured_image?: string;
     image_alt?: string;
-    category: string;
-    sub_category?: string;
-    author: string;
+    image_caption?: string;
     author_id?: string;
-    status: 'draft' | 'published' | 'archived';
-    featured?: boolean | number;
-    breaking?: boolean | number;
-    views?: number;
+    author?: string;
+    author_slug?: string;
     published_at: string;
-    updated_at?: string;
     created_at?: string;
+    updated_at?: string;
+
+    // SEO & Source Attribution Fields
     meta_title?: string;
     meta_description?: string;
     canonical_url?: string;
     source_name?: string;
     source_url?: string;
-    location?: string;
+}
+
+export interface Category {
+    id: string;
+    name: string;
+    slug: string;
+    description?: string;
+}
+
+export interface Author {
+    id: string;
+    name: string;
+    slug: string;
+    bio?: string;
+    avatar_url?: string;
+    role?: string;
 }

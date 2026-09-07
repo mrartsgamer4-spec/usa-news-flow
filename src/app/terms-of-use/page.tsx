@@ -1,11 +1,23 @@
+import { Metadata } from 'next';
+import { siteConfig } from '@/lib/siteConfig';
+
+export const metadata: Metadata = {
+    title: `Terms of Use | ${siteConfig.name}`,
+};
+
 export default function TermsOfUsePage() {
     return (
-        <div className="max-w-4xl mx-auto px-4 py-12 font-sans">
-            <h1 className="text-3xl font-serif font-bold text-gray-900 border-b pb-4 mb-6">Terms of Use</h1>
-            <div className="text-gray-700 leading-relaxed space-y-4">
-                <p>Welcome to USA News Flow. By accessing and using our website, you agree to comply with and be bound by the following terms and conditions.</p>
-                <p>All content provided on this site is for informational purposes only. We reserve the right to modify or replace these terms at any time.</p>
-            </div>
-        </div>
+        <main className="max-w-4xl mx-auto px-4 py-12 space-y-6 text-gray-800">
+            <h1 className="text-3xl font-extrabold text-gray-900 border-b-2 border-red-600 pb-2">
+                Terms of Use
+            </h1>
+            <p className="leading-relaxed">
+                By accessing <strong>{siteConfig.name}</strong>, you agree to comply with these Terms of Use and all applicable laws and regulations.
+            </p>
+            <h2 className="text-xl font-bold text-gray-900 pt-4">Intellectual Property</h2>
+            <p className="leading-relaxed">
+                All articles, original graphics, and editorial content published on this website are protected under copyright laws. Redistribution without prior written permission is prohibited.
+            </p>
+        </main>
     );
 }
