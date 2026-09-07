@@ -1,32 +1,38 @@
 import { MetadataRoute } from 'next';
-import { mockArticles } from '@/lib/mockData';
+import { siteConfig } from '@/lib/siteConfig';
+import { getPublishedArticles } from '@/lib/newsService';
 
-export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = 'https://yourwebsite.com'; // আপনার আসল ডোমেইন লিংক দিন
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+    const baseUrl = siteConfig.url;
 
-    // mockArticles থেকে ডাইনামিক নিউজের লিংক জেনারেট করা
-    const articleUrls = (mockArticles || []).map((article) => ({
-        url: `${baseUrl}/news/${article.category}/${article.slug}`,
-        lastModified: new Date(article.publishedAt || Date.now()),
+    // Static Routes
+    const staticRoutes = [
+        '',
+        '/about-us',
+        '/contact',
+        '/privacy-policy',
+        '/terms-of-use',
+        '/news/category/us-news',
+        '/news/category/politics',
+        '/news/category/business',
+        '/news/category/technology',
+        '/news/category/sports',
+        '/news/category/world',
+    ].map((route) => ({
+        url: `${baseUrl}${route}`,
+        lastModified: new Date().toISOString(),
+        changeFrequency: 'always' as const,
+        priority: route === '' ? 1.0 : 0.8,
     }));
 
-    return [
-        {
-            url: baseUrl,
-            lastModified: new Date(),
-        },
-        {
-            url: `${baseUrl}/about-us`,
-            lastModified: new Date(),
-        },
-        {
-            url: `${baseUrl}/privacy-policy`,
-            lastModified: new Date(),
-        },
-        {
-            url: `${baseUrl}/terms-of-use`,
-            lastModified: new Date(),
-        },
-        ...articleUrls,
-    ];
+    // Dynamic Published Article Routes
+    const articles = await getPublishedArticles();
+    const articleUrls = articles.map((article) => ({
+        url: `${baseUrl}/news/${article.category.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')}/${article.slug}`,
+        lastModified: new Date(article.updated_at || article.published_at).toISOString(),
+        changeFrequency: 'daily' as const,
+        priority: 0.7,
+    }));
+
+    return [...staticRoutes, ...articleUrls];
 }

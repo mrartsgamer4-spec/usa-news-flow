@@ -1,19 +1,20 @@
 import type { Metadata } from 'next';
+import { siteConfig } from '@/lib/siteConfig';
 import '@/app/globals.css';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-    metadataBase: new URL('https://usanewsflow.com'),
+    metadataBase: new URL(siteConfig.url),
     title: {
-        default: 'USA News Flow | Latest Breaking News & Updates',
-        template: '%s | USA News Flow',
+        default: `${siteConfig.name} | Latest Breaking News & Updates`,
+        template: `%s | ${siteConfig.name}`,
     },
-    description: 'Stay updated with the latest breaking news, politics, business, technology, and world updates from USA News Flow.',
+    description: siteConfig.description,
     keywords: ['USA News', 'Breaking News', 'Latest News', 'US Politics', 'Tech News', 'Finance News'],
-    authors: [{ name: 'USA News Flow Team' }],
-    creator: 'USA News Flow',
-    publisher: 'USA News Flow',
+    authors: [{ name: siteConfig.publisher }],
+    creator: siteConfig.publisher,
+    publisher: siteConfig.publisher,
     robots: {
         index: true,
         follow: true,
@@ -28,6 +29,20 @@ export const metadata: Metadata = {
     icons: {
         icon: '/favicon.ico',
     },
+    openGraph: {
+        type: "website",
+        locale: siteConfig.locale,
+        url: siteConfig.url,
+        title: siteConfig.name,
+        description: siteConfig.description,
+        siteName: siteConfig.name,
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: siteConfig.name,
+        description: siteConfig.description,
+        creator: siteConfig.twitterHandle,
+    },
 };
 
 export default function RootLayout({
@@ -35,15 +50,16 @@ export default function RootLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const siteUrl = 'https://usanewsflow.com';
-
     const orgSchema = {
         '@context': 'https://schema.org',
         '@type': 'NewsMediaOrganization',
-        name: 'USA News Flow',
-        url: siteUrl,
-        logo: `${siteUrl}/globe.svg`,
-        sameAs: [],
+        name: siteConfig.name,
+        url: siteConfig.url,
+        logo: `${siteConfig.url}/logo.png`,
+        sameAs: [
+            siteConfig.links.twitter,
+            siteConfig.links.facebook,
+        ],
     };
 
     return (

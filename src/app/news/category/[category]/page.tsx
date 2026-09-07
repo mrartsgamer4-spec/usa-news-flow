@@ -1,84 +1,79 @@
-export const runtime = 'edge';
-
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
-import { mockArticles } from '@/lib/mockData';
+import { getPublishedArticles } from '@/lib/newsService';
+import { siteConfig } from '@/lib/siteConfig';
 
-interface Props {
+interface CategoryPageProps {
     params: Promise<{
         category: string;
     }>;
 }
 
-export async function generateMetadata({ params }: Props) {
-    const { category } = await params;
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+    const resolvedParams = await params;
+    const categoryName = resolvedParams.category.replace(/-/g, ' ').toUpperCase();
+    const canonicalUrl = `${siteConfig.url}/news/category/${resolvedParams.category}`;
 
     return {
-        title: `${category.toUpperCase()} News - USA News Flow`,
-        description: `Latest news and updates in ${category}`,
+        title: `${categoryName} News | ${siteConfig.name}`,
+        description: `Get the latest news, updates, and analysis on ${categoryName} from ${siteConfig.name}.`,
+        alternates: {
+            canonical: canonicalUrl,
+        },
+        openGraph: {
+            title: `${categoryName} News | ${siteConfig.name}`,
+            description: `Latest news and updates on ${categoryName}.`,
+            url: canonicalUrl,
+            siteName: siteConfig.name,
+        },
     };
 }
 
-export default async function CategoryPage({ params }: Props) {
-    const { category } = await params;
-
-    const categoryArticles = mockArticles.filter(
-        (a) => a.category.toLowerCase() === category.toLowerCase()
+export default async function CategoryPage({ params }: CategoryPageProps) {
+    const resolvedParams = await params;
+    const articles = await getPublishedArticles();
+    const categoryArticles = articles.filter(
+        (a) => a.category.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') === resolvedParams.category.toLowerCase()
     );
 
     if (categoryArticles.length === 0) {
         notFound();
     }
 
-    return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 capitalize mb-2">
-                    {category} News
-                </h1>
-                <p className="text-gray-600">
-                    Stay updated with the latest articles in {category}.
-                </p>
-            </div>
+    const categoryName = resolvedParams.category.replace(/-/g, ' ').toUpperCase();
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+            <h1 className="text-3xl font-extrabold text-gray-900 border-l-4 border-red-600 pl-3 uppercase">
+                {categoryName} NEWS
+            </h1>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {categoryArticles.map((article) => (
-                    <article
+                    <Link
                         key={article.id}
-                        className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                        href={`/news/${resolvedParams.category}/${article.slug}`}
+                        className="group bg-white border border-gray-100 rounded overflow-hidden shadow-xs block"
                     >
-                        <div className="relative h-48 w-full bg-gray-100">
+                        <div className="relative w-full h-48 bg-gray-100">
                             <Image
-                                src={article.imageUrl}
+                                src={article.featured_image || siteConfig.ogImage}
                                 alt={article.title}
                                 fill
-                                className="object-cover"
+                                className="object-cover group-hover:scale-105 transition duration-300"
                             />
                         </div>
-                        <div className="p-5">
-                            <div className="text-xs text-gray-500 mb-2">
-                                {article.publishedAt} • By {article.author}
-                            </div>
-                            <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                                <Link
-                                    href={`/news/${article.category.toLowerCase()}/${article.slug}`}
-                                    className="hover:text-blue-600"
-                                >
-                                    {article.title}
-                                </Link>
+                        <div className="p-4 space-y-2">
+                            <h2 className="font-bold text-gray-900 group-hover:text-red-600 line-clamp-2">
+                                {article.title}
                             </h2>
-                            <p className="text-gray-600 text-sm line-clamp-3 mb-4">
-                                {article.summary}
+                            <p className="text-xs text-gray-500 line-clamp-2">
+                                {article.excerpt}
                             </p>
-                            <Link
-                                href={`/news/${article.category.toLowerCase()}/${article.slug}`}
-                                className="text-blue-600 font-semibold text-sm hover:underline"
-                            >
-                                Read full article →
-                            </Link>
                         </div>
-                    </article>
+                    </Link>
                 ))}
             </div>
         </div>
