@@ -3,6 +3,10 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
+[vars]
+ADMIN_PASSWORD = "YourSuperSecurePassword2026@G"
+JWT_SECRET = "USA_NEWS_FLOW_SECRET_JWT_KEY_9876543"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "usa-news-db"
