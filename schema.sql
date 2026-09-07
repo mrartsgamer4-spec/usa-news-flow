@@ -1,29 +1,56 @@
-CREATE TABLE IF NOT EXISTS users (
+-- Authors Table
+CREATE TABLE IF NOT EXISTS authors (
     id TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
     name TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'admin',
-    created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    slug TEXT UNIQUE NOT NULL,
+    bio TEXT,
+    photo_url TEXT,
+    twitter_handle TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- News Articles Table
 CREATE TABLE IF NOT EXISTS articles (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     slug TEXT UNIQUE NOT NULL,
+    category TEXT NOT NULL,
+    sub_category TEXT,
     excerpt TEXT NOT NULL,
     content TEXT NOT NULL,
-    featured_image TEXT NOT NULL,
+    featured_image TEXT,
     image_alt TEXT,
-    category TEXT NOT NULL,
-    author TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'published',
-    featured INTEGER DEFAULT 0,
-    breaking INTEGER DEFAULT 0,
-    views INTEGER DEFAULT 0,
-    published_at INTEGER DEFAULT (unixepoch()),
-    created_at INTEGER DEFAULT (unixepoch())
+    image_caption TEXT,
+    author_id TEXT REFERENCES authors(id),
+    status TEXT CHECK(status IN ('draft', 'published', 'archived')) DEFAULT 'published',
+    meta_title TEXT,
+    meta_description TEXT,
+    canonical_url TEXT,
+    source_name TEXT,
+    source_url TEXT,
+    published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Indexing
 CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug);
-CREATE INDEX IF NOT EXISTS idx_articles_category ON articles(category, published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_articles_category ON articles(category);
+CREATE INDEX IF NOT EXISTS idx_articles_status_published ON articles(status, published_at DESC);
+
+-- Seed Data (Test Articles)
+INSERT INTO authors (id, name, slug) 
+VALUES ('auth_1', 'Editorial Team', 'editorial-team')
+ON CONFLICT(id) DO NOTHING;
+
+INSERT INTO articles (id, title, slug, category, excerpt, content, author_id, status) 
+VALUES (
+    'art_1', 
+    'Federal Reserve Signals Interest Rate Pause Amid Steady Growth', 
+    'fed-keeps-interest-rates-steady', 
+    'business', 
+    'The Federal Reserve maintained interest rates at current levels during today meeting.', 
+    'Full article content goes here...', 
+    'auth_1', 
+    'published'
+)
+ON CONFLICT(id) DO NOTHING;
