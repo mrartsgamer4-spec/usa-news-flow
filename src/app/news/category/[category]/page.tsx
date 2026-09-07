@@ -1,7 +1,6 @@
 export const runtime = 'edge';
 
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getPublishedArticles } from '@/lib/newsService';
@@ -24,25 +23,19 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
         alternates: {
             canonical: canonicalUrl,
         },
-        openGraph: {
-            title: `${categoryName} News | ${siteConfig.name}`,
-            description: `Latest news and updates on ${categoryName}.`,
-            url: canonicalUrl,
-            siteName: siteConfig.name,
-        },
     };
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
     const resolvedParams = await params;
     const articles = await getPublishedArticles();
-    const categoryArticles = articles.filter(
-        (a) => a.category.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') === resolvedParams.category.toLowerCase()
-    );
 
-    if (categoryArticles.length === 0) {
-        notFound();
-    }
+    // ক্যাটাগরি ফিল্টারিং নরমাল করার ম্যাচিং
+    const categoryArticles = articles.filter((a) => {
+        const dbCategory = a.category ? a.category.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+        const paramCategory = resolvedParams.category ? resolvedParams.category.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+        return dbCategory === paramCategory;
+    });
 
     const categoryName = resolvedParams.category.replace(/-/g, ' ').toUpperCase();
 
@@ -52,32 +45,38 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                 {categoryName} NEWS
             </h1>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {categoryArticles.map((article) => (
-                    <Link
-                        key={article.id}
-                        href={`/news/${resolvedParams.category}/${article.slug}`}
-                        className="group bg-white border border-gray-100 rounded overflow-hidden shadow-xs block"
-                    >
-                        <div className="relative w-full h-48 bg-gray-100">
-                            <Image
-                                src={article.featured_image || siteConfig.ogImage}
-                                alt={article.title}
-                                fill
-                                className="object-cover group-hover:scale-105 transition duration-300"
-                            />
-                        </div>
-                        <div className="p-4 space-y-2">
-                            <h2 className="font-bold text-gray-900 group-hover:text-red-600 line-clamp-2">
-                                {article.title}
-                            </h2>
-                            <p className="text-xs text-gray-500 line-clamp-2">
-                                {article.excerpt}
-                            </p>
-                        </div>
-                    </Link>
-                ))}
-            </div>
+            {categoryArticles.length === 0 ? (
+                <div className="py-12 text-center bg-gray-50 rounded border">
+                    <p className="text-gray-600 font-medium">No articles found under {categoryName} category.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {categoryArticles.map((article) => (
+                        <Link
+                            key={article.id}
+                            href={`/news/${resolvedParams.category}/${article.slug}`}
+                            className="group bg-white border border-gray-100 rounded overflow-hidden shadow-xs block"
+                        >
+                            <div className="relative w-full h-48 bg-gray-100">
+                                <Image
+                                    src={article.featured_image || siteConfig.ogImage}
+                                    alt={article.title}
+                                    fill
+                                    className="object-cover group-hover:scale-105 transition duration-300"
+                                />
+                            </div>
+                            <div className="p-4 space-y-2">
+                                <h2 className="font-bold text-gray-900 group-hover:text-red-600 line-clamp-2">
+                                    {article.title}
+                                </h2>
+                                <p className="text-xs text-gray-500 line-clamp-2">
+                                    {article.excerpt}
+                                </p>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
