@@ -1,10 +1,10 @@
 import { MetadataRoute } from 'next';
-import { mockArticles } from '@/lib/mockData';
+import { mockArticles, Article } from '@/lib/mockData';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://usanewsflow.com';
 
-    const newsEntries = mockArticles.map((article) => ({
+    const newsEntries = mockArticles.map((article: Article) => ({
         url: `${baseUrl}/news/${article.category.toLowerCase()}/${article.slug}`,
         lastModified: new Date(article.publishedAt),
         changeFrequency: 'daily' as const,

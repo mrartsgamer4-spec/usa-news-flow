@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { mockArticles } from '@/lib/mockData';
+import { mockArticles, Article } from '@/lib/mockData';
 
 interface Props {
     params: Promise<{
@@ -14,7 +14,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const resolvedParams = await params;
-    const article = mockArticles.find((a) => a.slug === resolvedParams.slug);
+    const article = mockArticles.find((a: Article) => a.slug === resolvedParams.slug);
 
     if (!article) return {};
 
@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ArticlePage({ params }: Props) {
     const resolvedParams = await params;
-    const article = mockArticles.find((a) => a.slug === resolvedParams.slug);
+    const article = mockArticles.find((a: Article) => a.slug === resolvedParams.slug);
 
     if (!article) {
         notFound();
@@ -93,7 +93,7 @@ export default async function ArticlePage({ params }: Props) {
     };
 
     const relatedArticles = mockArticles
-        .filter((a) => a.slug !== article.slug && a.category === article.category)
+        .filter((a: Article) => a.slug !== article.slug && a.category === article.category)
         .slice(0, 3);
 
     return (
@@ -147,7 +147,7 @@ export default async function ArticlePage({ params }: Props) {
                 <section className="mt-12 pt-8 border-t">
                     <h2 className="text-2xl font-bold mb-6">Related News</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {relatedArticles.map((item) => (
+                        {relatedArticles.map((item: Article) => (
                             <Link
                                 key={item.id}
                                 href={`/news/${item.category.toLowerCase()}/${item.slug}`}
