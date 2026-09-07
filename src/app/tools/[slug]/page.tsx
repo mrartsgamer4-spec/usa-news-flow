@@ -41,3 +41,4 @@ export default function ToolDetailPage({ params }: PageProps) {
             );
     }
 }
+export const runtime = 'edge';

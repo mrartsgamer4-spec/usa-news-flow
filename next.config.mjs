@@ -1,20 +1,17 @@
-import { setupDevPlatform } from '@cloudflare/next-on-pages/next-dev';
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    images: {
-        remotePatterns: [
-            {
-                protocol: 'https',
-                hostname: 'images.unsplash.com',
-            },
-        ],
+    // Turbopack ইগনোর অপশন
+    turbopack: {},
+
+    // Server external packages
+    serverExternalPackages: ['canvas'],
+
+    // Webpack Config
+    webpack: (config) => {
+        config.resolve.alias.canvas = false;
+        config.resolve.alias.encoding = false;
+        return config;
     },
 };
-
-// Development এনামেন্টে Cloudflare platform সেটআপ
-if (process.env.NODE_ENV === 'development') {
-    setupDevPlatform().catch((err) => console.error(err));
-}
 
 export default nextConfig;
