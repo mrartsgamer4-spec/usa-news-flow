@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Clock, CloudSun, ArrowRight } from "lucide-react";
-import { MockNewsData } from "@/lib/mockData";
+import { mockArticles, Article } from "@/lib/mockData";
 
 interface NewsItem {
     id?: string | number;
@@ -55,12 +55,18 @@ export default function HomePage() {
             }
         }
 
-        const mockList: NewsItem[] = [
-            MockNewsData?.heroArticle,
-            ...(MockNewsData?.topStories || []),
-            ...(MockNewsData?.middleArticles || []),
-            ...(MockNewsData?.popularArticles || [])
-        ].filter(Boolean) as NewsItem[];
+        // Mapping mockArticles array to NewsItem format
+        const mockList: NewsItem[] = (mockArticles || []).map((art: Article) => ({
+            id: art.id,
+            title: art.title,
+            slug: art.slug,
+            category: art.category,
+            content: art.content,
+            excerpt: art.summary,
+            publishedAt: art.publishedAt,
+            featuredImage: art.imageUrl,
+            reporterName: art.author
+        }));
 
         const allArticles = [...localArticles, ...mockList];
 

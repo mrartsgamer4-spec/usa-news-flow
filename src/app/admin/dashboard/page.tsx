@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PlusCircle, Edit, Trash2 } from "lucide-react";
-import { MockNewsData } from "@/lib/mockData";
+import { mockArticles, Article } from "@/lib/mockData";
 
 export interface ArticleForm {
     id: string;
@@ -114,19 +114,20 @@ export default function AdminDashboard() {
                 console.error("Error parsing saved articles", e);
             }
         } else {
-            const hero = MockNewsData?.heroArticle as any;
+            // Pick first article from mockArticles array
+            const hero = mockArticles?.[0] as Article | undefined;
             const initial: ArticleForm[] = [
                 {
-                    id: "1",
+                    id: hero?.id?.toString() || "1",
                     title: hero?.title || "Default News Title",
                     slug: hero?.slug || "default-news-title",
-                    reporterName: "John Doe",
-                    featuredImage: hero?.featuredImage || hero?.image || "",
+                    reporterName: hero?.author || "John Doe",
+                    featuredImage: hero?.imageUrl || "",
                     imageCaption: "US Infrastructure Investment Plan",
                     category: hero?.category || "us-news",
                     subCategory: "",
-                    content: hero?.excerpt || hero?.description || hero?.content || "",
-                    publishedAt: getFormattedTime(),
+                    content: hero?.content || hero?.summary || "",
+                    publishedAt: hero?.publishedAt || getFormattedTime(),
                 },
             ];
             setArticles(initial);
