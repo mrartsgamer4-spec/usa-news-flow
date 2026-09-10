@@ -1,47 +1,34 @@
+import { getRequestContext } from '@cloudflare/next-on-pages';
 import { Article } from '@/types/article';
 
 export async function getPublishedArticles(): Promise<Article[]> {
     try {
-        if (typeof process !== 'undefined' && process.env) {
-            const { getRequestContext } = await import('@cloudflare/next-on-pages');
-            const { env } = getRequestContext();
+        const db = getRequestContext().env.DB;
+        if (!db) return [];
 
-            if (env?.DB) {
-                const result = await env.DB.prepare(
-                    `SELECT * FROM articles 
-           WHERE status = 'published' OR status IS NULL 
-           ORDER BY published_at DESC`
-                ).all<Article>();
+        const { results } = await db.prepare(
+            "SELECT * FROM articles WHERE status = 'published' ORDER BY published_at DESC LIMIT 20"
+        ).all();
 
-                return result.results || [];
-            }
-        }
+        return (results as unknown) as Article[];
     } catch (error) {
-        console.error('Error fetching published articles:', error);
+        console.error("Error fetching articles:", error);
+        return [];
     }
-
-    return [];
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
     try {
-        if (typeof process !== 'undefined' && process.env) {
-            const { getRequestContext } = await import('@cloudflare/next-on-pages');
-            const { env } = getRequestContext();
+        const db = getRequestContext().env.DB;
+        if (!db) return null;
 
-            if (env?.DB) {
-                const article = await env.DB.prepare(
-                    `SELECT * FROM articles WHERE slug = ? AND (status = 'published' OR status IS NULL) LIMIT 1`
-                )
-                    .bind(slug)
-                    .first<Article>();
+        const article = await db.prepare(
+            "SELECT * FROM articles WHERE slug = ? AND status = 'published'"
+        ).bind(slug).first();
 
-                return article || null;
-            }
-        }
+        return (article as unknown) as Article | null;
     } catch (error) {
-        console.error('Error fetching article by slug:', error);
+        console.error("Error fetching article by slug:", error);
+        return null;
     }
-
-    return null;
 }

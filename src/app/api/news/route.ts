@@ -1,169 +1,92 @@
-import { NextResponse } from 'next/server';
-
 export const runtime = 'edge';
+import { NextResponse } from 'next/server';
+import { getRequestContext } from '@cloudflare/next-on-pages';
 
 export async function GET(request: Request) {
     try {
+        const db = getRequestContext().env.DB;
         const { searchParams } = new URL(request.url);
         const category = searchParams.get('category');
-        const slug = searchParams.get('slug');
 
-        // Cloudflare D1 DB Binding
-        const db = (process.env as any).DB;
-        if (!db) {
-            return NextResponse.json({ error: 'Database binding failed' }, { status: 500 });
-        }
-
-        if (slug) {
-            const article = await db.prepare('SELECT * FROM articles WHERE slug = ?').bind(slug).first();
-            return NextResponse.json(article);
-        }
-
-        let query = 'SELECT * FROM articles ORDER BY published_at DESC';
-        let params: any[] = [];
+        let query = "SELECT * FROM articles ORDER BY created_at DESC";
+        let results;
 
         if (category) {
-            query = 'SELECT * FROM articles WHERE category = ? ORDER BY published_at DESC';
-            params = [category];
+            const stmt = await db.prepare("SELECT * FROM articles WHERE category = ? ORDER BY created_at DESC").bind(category);
+            const res = await stmt.all();
+            results = res.results;
+        } else {
+            const res = await db.prepare(query).all();
+            results = res.results;
         }
 
-        const { results } = await db.prepare(query).bind(...params).all();
-        return NextResponse.json(results || []);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(results);
+    } catch (error) {
+        return NextResponse.json({ error: 'Failed to fetch news' }, { status: 500 });
     }
 }
 
 export async function POST(request: Request) {
     try {
-        const db = (process.env as any).DB;
-        if (!db) {
-            return NextResponse.json({ error: 'Database binding failed' }, { status: 500 });
-        }
-
+        const db = getRequestContext().env.DB;
         const body = await request.json();
-        const {
-            title,
-            slug,
-            content,
-            category,
-            sub_category,
-            featured_image,
-            image_caption,
-            writer_name,
-            excerpt,
-            status,
-        } = body;
+        const { title, slug, content, excerpt, category, author_id, image_url, status } = body;
 
-        const id = crypto.randomUUID();
-        const now = new Date().toISOString();
-        const articleStatus = status || 'published';
-        const authorName = writer_name || 'Editorial Team';
+        const published_at = status === 'published' ? new Date().toISOString() : null;
 
-        await db
-            .prepare(
-                `INSERT INTO articles (
-                    id, slug, title, excerpt, content, category, subcategory, 
-                    featured_image, image_caption, author, status, published_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-            )
-            .bind(
-                id,
-                slug,
-                title,
-                excerpt || title,
-                content,
-                category,
-                sub_category || '',
-                featured_image || '',
-                image_caption || '',
-                authorName,
-                articleStatus,
-                now,
-                now
-            )
-            .run();
+        const { success } = await db.prepare(
+            `INSERT INTO articles (title, slug, content, excerpt, category, author_id, image_url, status, published_at, created_at, updated_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+        ).bind(title, slug, content, excerpt, category, author_id || 1, image_url, status, published_at).run();
 
-        return NextResponse.json({ success: true, id }, { status: 201 });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        if (success) {
+            return NextResponse.json({ message: 'Article created successfully' }, { status: 201 });
+        } else {
+            return NextResponse.json({ error: 'Failed to create article' }, { status: 500 });
+        }
+    } catch (error) {
+        return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
 }
 
 export async function PUT(request: Request) {
     try {
-        const db = (process.env as any).DB;
-        if (!db) {
-            return NextResponse.json({ error: 'Database binding failed' }, { status: 500 });
-        }
-
+        const db = getRequestContext().env.DB;
         const body = await request.json();
-        const {
-            id,
-            title,
-            slug,
-            content,
-            category,
-            sub_category,
-            featured_image,
-            image_caption,
-            writer_name,
-            excerpt,
-            status,
-        } = body;
+        const { id, title, slug, content, excerpt, category, image_url, status } = body;
 
-        if (!id) {
-            return NextResponse.json({ error: 'Article ID is required' }, { status: 400 });
+        const published_at = status === 'published' ? new Date().toISOString() : null;
+
+        const { success } = await db.prepare(
+            `UPDATE articles SET title = ?, slug = ?, content = ?, excerpt = ?, category = ?, image_url = ?, status = ?, published_at = COALESCE(published_at, ?), updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+        ).bind(title, slug, content, excerpt, category, image_url, status, published_at, id).run();
+
+        if (success) {
+            return NextResponse.json({ message: 'Article updated successfully' });
+        } else {
+            return NextResponse.json({ error: 'Failed to update article' }, { status: 500 });
         }
-
-        const now = new Date().toISOString();
-        const articleStatus = status || 'published';
-        const authorName = writer_name || 'Editorial Team';
-
-        await db
-            .prepare(
-                `UPDATE articles SET 
-                    title = ?, slug = ?, excerpt = ?, content = ?, category = ?, 
-                    subcategory = ?, featured_image = ?, image_caption = ?, 
-                    author = ?, status = ?, updated_at = ?
-                WHERE id = ?`
-            )
-            .bind(
-                title,
-                slug,
-                excerpt || title,
-                content,
-                category,
-                sub_category || '',
-                featured_image || '',
-                image_caption || '',
-                authorName,
-                articleStatus,
-                now,
-                id
-            )
-            .run();
-
-        return NextResponse.json({ success: true });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
 }
 
 export async function DELETE(request: Request) {
     try {
+        const db = getRequestContext().env.DB;
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
-        if (!id) {
-            return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+        if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+        const { success } = await db.prepare("DELETE FROM articles WHERE id = ?").bind(id).run();
+
+        if (success) {
+            return NextResponse.json({ message: 'Article deleted successfully' });
+        } else {
+            return NextResponse.json({ error: 'Failed to delete article' }, { status: 500 });
         }
-
-        const db = (process.env as any).DB;
-        await db.prepare('DELETE FROM articles WHERE id = ?').bind(id).run();
-
-        return NextResponse.json({ success: true });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
 }
