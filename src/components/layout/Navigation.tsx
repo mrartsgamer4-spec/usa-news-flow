@@ -2,9 +2,20 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
-const NAV_ITEMS = [
+interface SubItem {
+    label: string;
+    href: string;
+}
+
+interface NavItem {
+    label: string;
+    href: string;
+    sub?: SubItem[];
+}
+
+const NAV_ITEMS: NavItem[] = [
     { label: "HOME", href: "/" },
     {
         label: "U.S. NEWS",
@@ -70,40 +81,34 @@ const NAV_ITEMS = [
 
 export default function Navigation() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [hoveredItem, setHoveredItem] = useState<NavItem | null>(null);
 
     return (
-        <nav className="bg-red-600 text-white shadow-md relative z-50">
+        <nav
+            className="w-full bg-red-600 text-white shadow-md relative"
+            onMouseLeave={() => setHoveredItem(null)}
+        >
+            {/* মূল মেনুবার */}
             <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-11">
-                {/* Desktop Navigation */}
                 <div className="hidden lg:flex items-center space-x-1">
-                    {NAV_ITEMS.map((item) => (
-                        <div key={item.label} className="relative group">
+                    {NAV_ITEMS.map((item) => {
+                        const isHovered = hoveredItem?.label === item.label;
+
+                        return (
                             <Link
+                                key={item.label}
                                 href={item.href}
-                                className="px-3 py-2 text-xs font-bold uppercase tracking-wider hover:bg-red-700 transition flex items-center gap-1 rounded-sm"
+                                onMouseEnter={() => setHoveredItem(item.sub ? item : null)}
+                                className={`px-3 py-2 text-xs font-bold uppercase tracking-wider transition rounded-sm flex items-center gap-1 ${isHovered ? 'bg-red-800 text-white' : 'hover:bg-red-700 text-white'
+                                    }`}
                             >
                                 {item.label}
-                                {item.sub && <ChevronDown size={12} className="opacity-80 group-hover:rotate-180 transition-transform" />}
                             </Link>
-
-                            {item.sub && (
-                                <div className="absolute top-full left-0 hidden group-hover:block bg-white text-gray-900 shadow-xl border border-gray-200 py-1.5 min-w-[200px] rounded-b-md z-50">
-                                    {item.sub.map((subItem) => (
-                                        <Link
-                                            key={subItem.label}
-                                            href={subItem.href}
-                                            className="block px-4 py-2 text-xs font-semibold hover:bg-red-50 hover:text-red-600 transition border-b border-gray-100 last:border-0"
-                                        >
-                                            {subItem.label}
-                                        </Link>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
-                {/* Mobile Hamburger Button */}
+                {/* মোবাইল মেনু বাটন */}
                 <div className="lg:hidden flex items-center justify-between w-full">
                     <span className="text-xs font-bold uppercase tracking-widest text-white/90">Navigation Menu</span>
                     <button
@@ -116,7 +121,30 @@ export default function Navigation() {
                 </div>
             </div>
 
-            {/* Mobile Menu Dropdown */}
+            {/* ইনলাইন হরাইজন্টাল সাব-ক্যাটাগরি বার (হিরো ইমেজের উপরে কোনো পপআপ ভাসবে না) */}
+            {hoveredItem && hoveredItem.sub && (
+                <div
+                    className="w-full bg-red-800 border-t border-red-500 py-1.5 px-4 animate-in fade-in duration-150"
+                    onMouseEnter={() => setHoveredItem(hoveredItem)}
+                >
+                    <div className="max-w-7xl mx-auto flex items-center gap-6 overflow-x-auto text-[11px] font-medium">
+                        <span className="text-red-200 uppercase font-bold tracking-wider text-[10px]">
+                            {hoveredItem.label}:
+                        </span>
+                        {hoveredItem.sub.map((subItem) => (
+                            <Link
+                                key={subItem.label}
+                                href={subItem.href}
+                                className="text-white hover:text-red-200 hover:underline transition whitespace-nowrap"
+                            >
+                                {subItem.label}
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* মোবাইল ড্রপডাউন */}
             {mobileMenuOpen && (
                 <div className="lg:hidden bg-black text-white px-4 py-4 space-y-3 max-h-[80vh] overflow-y-auto">
                     {NAV_ITEMS.map((item) => (

@@ -1,3 +1,4 @@
+export const runtime = 'edge'; 
 import { MetadataRoute } from 'next';
 import { siteConfig } from '@/lib/siteConfig';
 import { Article } from '@/types/article';
