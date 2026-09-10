@@ -1,54 +1,50 @@
-import { siteConfig } from './siteConfig';
+import { siteConfig } from '@/lib/siteConfig';
 import { Article } from '@/types/article';
-import { getArticleUrl, getAuthorUrl } from './urls';
-
-export interface BreadcrumbItem {
-    name: string;
-    url: string;
-}
+import { getArticleUrl } from '@/lib/urls';
 
 export function generateNewsArticleSchema(article: Article) {
-    const articleUrl = article.canonical_url || getArticleUrl(article.category, article.slug);
-    const authorUrl = getAuthorUrl(article.author_slug || 'editorial-team');
-    const imageUrl = article.featured_image || siteConfig.defaultOgImage;
+    const catName = typeof article.category === 'string'
+        ? article.category
+        : article.category?.name || 'News';
+
+    const authorName = typeof article.author === 'string'
+        ? article.author
+        : article.author?.name || 'Editorial Team';
+
+    const canonicalUrl = article.canonical_url || `${siteConfig.url}${getArticleUrl(catName, article.slug)}`;
+    const imageUrl = article.featured_image || article.coverImage || siteConfig.defaultOgImage;
+    const publishDate = article.published_at || article.publishedAt || new Date().toISOString();
+    const updateDate = article.updated_at || article.updatedAt || publishDate;
 
     return {
         '@context': 'https://schema.org',
         '@type': 'NewsArticle',
         mainEntityOfPage: {
             '@type': 'WebPage',
-            '@id': articleUrl,
+            '@id': canonicalUrl,
         },
-        headline: article.meta_title || article.title,
-        description: article.meta_description || article.excerpt || article.title,
+        headline: article.title,
+        description: article.excerpt || article.meta_description || article.title,
         image: [imageUrl],
-        datePublished: article.published_at,
-        dateModified: article.updated_at || article.published_at,
+        datePublished: publishDate,
+        dateModified: updateDate,
         author: {
             '@type': 'Person',
-            name: article.author || 'Editorial Team',
-            url: authorUrl,
+            name: authorName,
         },
         publisher: {
-            '@type': 'NewsMediaOrganization',
+            '@type': 'Organization',
             name: siteConfig.name,
-            url: siteConfig.url,
             logo: {
                 '@type': 'ImageObject',
-                url: `${siteConfig.url}${siteConfig.logo}`,
+                url: `${siteConfig.url}/logo.png`,
             },
         },
-        ...(article.source_name && {
-            isBasedOn: {
-                '@type': 'CreativeWork',
-                name: article.source_name,
-                ...(article.source_url && { url: article.source_url }),
-            },
-        }),
+        articleSection: catName,
     };
 }
 
-export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
+export function generateBreadcrumbSchema(items: { name: string; url: string }[]) {
     return {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
@@ -56,34 +52,7 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
             '@type': 'ListItem',
             position: index + 1,
             name: item.name,
-            item: item.url,
+            item: item.url.startsWith('http') ? item.url : `${siteConfig.url}${item.url}`,
         })),
-    };
-}
-
-export function generateOrganizationSchema() {
-    return {
-        '@context': 'https://schema.org',
-        '@type': 'NewsMediaOrganization',
-        name: siteConfig.name,
-        url: siteConfig.url,
-        logo: `${siteConfig.url}${siteConfig.logo}`,
-        sameAs: siteConfig.sameAs.filter(Boolean),
-        publishingPrinciples: `${siteConfig.url}/editorial-policy`,
-        correctionsPolicy: `${siteConfig.url}/corrections-policy`,
-    };
-}
-
-export function generateWebSiteSchema() {
-    return {
-        '@context': 'https://schema.org',
-        '@type': 'WebSite',
-        name: siteConfig.name,
-        url: siteConfig.url,
-        potentialAction: {
-            '@type': 'SearchAction',
-            target: `${siteConfig.url}/search?q={search_term_string}`,
-            'query-input': 'required name=search_term_string',
-        },
     };
 }

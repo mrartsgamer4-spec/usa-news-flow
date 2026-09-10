@@ -1,49 +1,45 @@
 import { MetadataRoute } from 'next';
 import { siteConfig } from '@/lib/siteConfig';
-import { getPublishedArticles } from '@/lib/newsService';
-import { getArticleUrl, getCategoryUrl } from '@/lib/urls';
+import { Article } from '@/types/article';
+import { getArticleUrl } from '@/lib/urls';
+
+async function fetchAllArticles(): Promise<Article[]> {
+    try {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
+        const res = await fetch(`${baseUrl}/api/news?limit=100`, { cache: 'no-store' });
+        if (res.ok) {
+            const data = await res.json();
+            return Array.isArray(data) ? data : (data.articles || []);
+        }
+    } catch (e) {
+        console.error('Failed to fetch articles for main sitemap', e);
+    }
+    return [];
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = siteConfig.url;
+    const articles = await fetchAllArticles();
 
-    // Static pages with correct routes
-    const staticRoutes: MetadataRoute.Sitemap = [
-        '',
-        '/about-us',
-        '/contact',
-        '/editorial-policy',
-        '/corrections-policy',
-        '/advertising-policy',
-        '/privacy-policy',
-        '/terms-of-use',
-    ].map((route) => ({
-        url: `${baseUrl}${route}`,
-        lastModified: new Date(),
-        changeFrequency: route === '' ? 'always' : 'monthly',
-        priority: route === '' ? 1.0 : 0.5,
-    }));
+    const articleEntries: MetadataRoute.Sitemap = articles.map((article) => {
+        const catName = typeof article.category === 'string' ? article.category : article.category?.name || 'news';
+        const url = article.canonical_url || `${siteConfig.url}${getArticleUrl(catName, article.slug)}`;
+        const lastModified = article.updated_at || article.updatedAt || article.published_at || article.publishedAt || new Date();
 
-    const articles = await getPublishedArticles();
-
-    const categorySet = new Set<string>();
-    const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => {
-        if (article.category) {
-            categorySet.add(article.category);
-        }
         return {
-            url: article.canonical_url || getArticleUrl(article.category, article.slug),
-            lastModified: new Date(article.updated_at || article.published_at),
-            changeFrequency: 'weekly',
+            url,
+            lastModified: new Date(lastModified),
+            changeFrequency: 'daily',
             priority: 0.8,
         };
     });
 
-    const categoryRoutes: MetadataRoute.Sitemap = Array.from(categorySet).map((cat) => ({
-        url: getCategoryUrl(cat),
-        lastModified: new Date(),
-        changeFrequency: 'daily',
-        priority: 0.7,
-    }));
-
-    return [...staticRoutes, ...categoryRoutes, ...articleRoutes];
+    return [
+        {
+            url: siteConfig.url,
+            lastModified: new Date(),
+            changeFrequency: 'always',
+            priority: 1.0,
+        },
+        ...articleEntries,
+    ];
 }

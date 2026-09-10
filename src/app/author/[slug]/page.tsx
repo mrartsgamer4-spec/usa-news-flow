@@ -79,6 +79,7 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
     const { author, articles } = await getAuthorData(resolvedParams.slug);
     const authorName = author?.name || formatAuthorName(resolvedParams.slug);
     const authorUrl = getAuthorUrl(resolvedParams.slug);
+    const avatarUrl = author?.avatar_url || author?.avatar;
 
     const breadcrumbItems = [
         { name: 'Home', url: '/' },
@@ -98,10 +99,10 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
 
                 {/* Author Profile Header */}
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                    {author?.avatar_url ? (
+                    {avatarUrl ? (
                         <div className="relative w-24 h-24 rounded-full overflow-hidden shrink-0 border-2 border-red-600">
                             <Image
-                                src={author.avatar_url}
+                                src={avatarUrl}
                                 alt={authorName}
                                 fill
                                 className="object-cover"
@@ -136,35 +137,44 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {articles.map((article) => (
-                                <Link
-                                    key={article.id}
-                                    href={getArticleUrl(article.category, article.slug)}
-                                    className="group bg-white border border-gray-200 rounded-lg overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between"
-                                >
-                                    <div className="p-5 space-y-2">
-                                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">
-                                            {article.category}
-                                        </span>
-                                        <h3 className="font-bold text-gray-900 group-hover:text-red-600 line-clamp-2 leading-snug">
-                                            {article.title}
-                                        </h3>
-                                        <p className="text-xs text-gray-600 line-clamp-2">
-                                            {article.excerpt}
-                                        </p>
-                                    </div>
-                                    <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-[11px] text-gray-500 flex justify-between items-center">
-                                        <time dateTime={article.published_at}>
-                                            {new Date(article.published_at).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            })}
-                                        </time>
-                                        <span className="text-red-600 font-semibold group-hover:underline">Read Article →</span>
-                                    </div>
-                                </Link>
-                            ))}
+                            {articles.map((article) => {
+                                const catName = typeof article.category === 'string' ? article.category : article.category?.name || 'News';
+                                const pubDate = article.published_at || article.publishedAt;
+
+                                return (
+                                    <Link
+                                        key={article.id}
+                                        href={getArticleUrl(catName, article.slug)}
+                                        className="group bg-white border border-gray-200 rounded-lg overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between"
+                                    >
+                                        <div className="p-5 space-y-2">
+                                            <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">
+                                                {catName}
+                                            </span>
+                                            <h3 className="font-bold text-gray-900 group-hover:text-red-600 line-clamp-2 leading-snug">
+                                                {article.title}
+                                            </h3>
+                                            <p className="text-xs text-gray-600 line-clamp-2">
+                                                {article.excerpt}
+                                            </p>
+                                        </div>
+                                        <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-[11px] text-gray-500 flex justify-between items-center">
+                                            {pubDate ? (
+                                                <time dateTime={pubDate}>
+                                                    {new Date(pubDate).toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    })}
+                                                </time>
+                                            ) : (
+                                                <span>Recent</span>
+                                            )}
+                                            <span className="text-red-600 font-semibold group-hover:underline">Read Article →</span>
+                                        </div>
+                                    </Link>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

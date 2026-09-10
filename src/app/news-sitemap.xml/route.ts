@@ -1,59 +1,56 @@
-import { siteConfig } from '@/lib/siteConfig';
-import { getPublishedArticles } from '@/lib/newsService';
-import { getArticleUrl } from '@/lib/urls';
-
 export const runtime = 'edge';
 
-function escapeXml(unsafe: string): string {
-    return unsafe
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
+import { siteConfig } from '@/lib/siteConfig';
+import { Article } from '@/types/article';
+import { getArticleUrl } from '@/lib/urls';
+
+async function fetchLatestNews(): Promise<Article[]> {
+    try {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
+        const res = await fetch(`${baseUrl}/api/news?limit=50`, { cache: 'no-store' });
+        if (res.ok) {
+            const data = await res.json();
+            return Array.isArray(data) ? data : (data.articles || []);
+        }
+    } catch (e) {
+        console.error('Failed to fetch news for sitemap', e);
+    }
+    return [];
 }
 
 export async function GET() {
-    const articles = await getPublishedArticles();
+    const articles = await fetchLatestNews();
 
-    // Strictly strictly articles published within the last 48 hours
-    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const xmlItems = articles.map((article) => {
+        const catName = typeof article.category === 'string' ? article.category : article.category?.name || 'news';
+        const loc = article.canonical_url || `${siteConfig.url}${getArticleUrl(catName, article.slug)}`;
+        const pubDate = article.published_at || article.publishedAt || new Date().toISOString();
 
-    const recentArticles = articles.filter((article) => {
-        const pubDate = new Date(article.published_at);
-        return pubDate >= fortyEightHoursAgo;
-    });
-
-    const xmlItems = recentArticles
-        .map((art) => {
-            const articleUrl = art.canonical_url || getArticleUrl(art.category, art.slug);
-            const pubDate = new Date(art.published_at).toISOString();
-
-            return `
-  <url>
-    <loc>${articleUrl}</loc>
-    <news:news>
-      <news:publication>
-        <news:name>${escapeXml(siteConfig.name)}</news:name>
-        <news:language>${siteConfig.language || 'en'}</news:language>
-      </news:publication>
-      <news:publication_date>${pubDate}</news:publication_date>
-      <news:title>${escapeXml(art.title)}</news:title>
-    </news:news>
-  </url>`;
-        })
-        .join('');
+        return `
+      <url>
+        <loc>${loc}</loc>
+        <news:news>
+          <news:publication>
+            <news:name>${siteConfig.name}</news:name>
+            <news:language>en</news:language>
+          </news:publication>
+          <news:publication_date>${new Date(pubDate).toISOString()}</news:publication_date>
+          <news:title>${article.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</news:title>
+        </news:news>
+      </url>
+    `;
+    }).join('');
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-${xmlItems}
-</urlset>`;
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+            xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+      ${xmlItems}
+    </urlset>`;
 
     return new Response(xml, {
         headers: {
-            'Content-Type': 'application/xml; charset=utf-8',
-            'Cache-Control': 's-maxage=1800, stale-while-revalidate',
+            'Content-Type': 'application/xml',
+            'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=59',
         },
     });
 }

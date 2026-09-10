@@ -1,202 +1,122 @@
 export const runtime = 'edge';
 
 import { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { siteConfig } from '@/lib/siteConfig';
 import { Article } from '@/types/article';
-import { getArticleUrl, getCategoryUrl, getAuthorUrl } from '@/lib/urls';
-import { generateNewsArticleSchema, generateBreadcrumbSchema } from '@/lib/seoSchemas';
-import JsonLd from '@/components/seo/JsonLd';
-import Breadcrumbs from '@/components/seo/Breadcrumbs';
+import { getArticleUrl, getCategoryUrl } from '@/lib/urls';
 
-interface ArticlePageProps {
+interface CategoryPageProps {
     params: Promise<{
         category: string;
-        slug: string;
     }>;
 }
 
-async function getArticle(category: string, slug: string): Promise<Article | null> {
-    try {
-        if (typeof process !== 'undefined' && process.env) {
-            try {
-                const { getRequestContext } = await import('@cloudflare/next-on-pages');
-                const { env } = getRequestContext();
-                if (env?.DB) {
-                    const article = await env.DB.prepare(
-                        `SELECT a.*, COALESCE(auth.name, 'Editorial Team') as author, auth.slug as author_slug 
-                         FROM articles a 
-                         LEFT JOIN authors auth ON a.author_id = auth.id 
-                         WHERE a.slug = ? LIMIT 1`
-                    ).bind(slug).first<Article>();
-
-                    if (article) return article;
-                }
-            } catch (e) {
-                console.warn('D1 fetch failed in single article page, falling back to API', e);
-            }
-        }
-
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
-        const res = await fetch(`${baseUrl}/api/news?slug=${slug}`, {
-            cache: 'no-store'
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            return Array.isArray(data) ? data[0] : (data.article || data);
-        }
-    } catch (err) {
-        console.error('Error loading article:', err);
-    }
-
-    return null;
+function formatCategoryTitle(slug: string): string {
+    if (!slug) return 'Category';
+    return slug
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
-export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
-    const resolvedParams = await params;
-    const article = await getArticle(resolvedParams.category, resolvedParams.slug);
+function timeAgo(dateString?: string): string {
+    if (!dateString) return 'Recently';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Recently';
 
-    if (!article) {
-        return {
-            title: 'Article Not Found',
-        };
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    let interval = Math.floor(seconds / 31536000);
+    if (interval >= 1) return `${interval}y ago`;
+    interval = Math.floor(seconds / 2592000);
+    if (interval >= 1) return `${interval}m ago`;
+    interval = Math.floor(seconds / 86400);
+    if (interval >= 1) return `${interval}d ago`;
+    interval = Math.floor(seconds / 3600);
+    if (interval >= 1) return `${interval}h ago`;
+    interval = Math.floor(seconds / 60);
+    if (interval >= 1) return `${interval}m ago`;
+    return `${Math.floor(seconds)}s ago`;
+}
+
+async function getCategoryArticles(categorySlug: string): Promise<Article[]> {
+    try {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
+        const res = await fetch(`${baseUrl}/api/news?category=${categorySlug}`, { cache: 'no-store' });
+        if (res.ok) {
+            const data = await res.json();
+            return Array.isArray(data) ? data : (data.articles || []);
+        }
+    } catch (e) {
+        console.error('Error fetching category articles:', e);
     }
+    return [];
+}
 
-    const canonicalUrl = article.canonical_url || getArticleUrl(article.category, article.slug);
-    const imageUrl = article.featured_image || siteConfig.defaultOgImage;
-    const metaTitle = article.meta_title || `${article.title} | ${siteConfig.name}`;
-    const metaDescription = article.meta_description || article.excerpt || article.title;
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+    const resolvedParams = await params;
+    const categorySlug = resolvedParams?.category || '';
+    const title = formatCategoryTitle(categorySlug);
 
     return {
-        title: metaTitle,
-        description: metaDescription,
+        title: `${title} News | ${siteConfig.name}`,
+        description: `Latest updates and breaking news in ${title}.`,
         alternates: {
-            canonical: canonicalUrl,
-        },
-        openGraph: {
-            title: metaTitle,
-            description: metaDescription,
-            url: canonicalUrl,
-            siteName: siteConfig.name,
-            images: [{ url: imageUrl }],
-            type: 'article',
-            publishedTime: article.published_at,
-            modifiedTime: article.updated_at || article.published_at,
-        },
-        twitter: {
-            card: 'summary_large_image',
-            title: metaTitle,
-            description: metaDescription,
-            images: [imageUrl],
+            canonical: `${siteConfig.url}${getCategoryUrl(categorySlug)}`,
         },
     };
 }
 
-export default async function ArticlePage({ params }: ArticlePageProps) {
+export default async function CategoryPage({ params }: CategoryPageProps) {
     const resolvedParams = await params;
-    const article = await getArticle(resolvedParams.category, resolvedParams.slug);
+    const categorySlug = resolvedParams?.category || '';
+    const articles = await getCategoryArticles(categorySlug);
+    const categoryTitle = formatCategoryTitle(categorySlug);
 
-    if (!article) {
+    if (!articles) {
         notFound();
     }
 
-    const canonicalUrl = article.canonical_url || getArticleUrl(article.category, article.slug);
-    const categoryUrl = getCategoryUrl(article.category);
-    const authorSlug = article.author_slug || 'editorial-team';
-
-    const breadcrumbItems = [
-        { name: 'Home', url: '/' },
-        { name: article.category, url: categoryUrl },
-        { name: article.title, url: canonicalUrl },
-    ];
-
-    const newsArticleSchema = generateNewsArticleSchema(article);
-    const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
-
     return (
-        <>
-            <JsonLd data={[newsArticleSchema, breadcrumbSchema]} />
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <h1 className="text-3xl font-extrabold text-gray-900 border-b-2 border-red-600 pb-2 inline-block">
+                {categoryTitle}
+            </h1>
 
-            <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Visual Breadcrumb UI */}
-                <Breadcrumbs items={breadcrumbItems} />
+            {articles.length === 0 ? (
+                <p className="text-gray-500 py-8">No articles found in this category.</p>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {articles.map((article) => {
+                        const catName = typeof article.category === 'string'
+                            ? article.category
+                            : article.category?.name || categoryTitle;
 
-                {/* Article Category Badge */}
-                <Link href={categoryUrl} className="inline-block bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wider mb-3 hover:bg-red-700 transition">
-                    {article.category}
-                </Link>
+                        const pubDate = article.published_at || article.publishedAt;
 
-                {/* Article Title */}
-                <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
-                    {article.title}
-                </h1>
-
-                {/* Meta Info */}
-                <div className="flex items-center text-sm text-gray-600 border-y border-gray-200 py-3 mb-6 space-x-4">
-                    <div>
-                        By{' '}
-                        <Link href={getAuthorUrl(authorSlug)} className="font-semibold text-gray-900 hover:text-red-600 transition">
-                            {article.author || 'Editorial Team'}
-                        </Link>
-                    </div>
-                    <span>•</span>
-                    <time dateTime={article.published_at}>
-                        {new Date(article.published_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                        })}
-                    </time>
-                </div>
-
-                {/* Featured Image & Caption */}
-                {article.featured_image && (
-                    <figure className="mb-8">
-                        <div className="relative w-full h-[300px] sm:h-[480px] bg-gray-100 rounded-lg overflow-hidden">
-                            <Image
-                                src={article.featured_image}
-                                alt={article.image_alt || article.title}
-                                fill
-                                priority
-                                className="object-cover"
-                            />
-                        </div>
-                        {article.image_caption && (
-                            <figcaption className="text-xs text-gray-500 mt-2 text-center italic">
-                                {article.image_caption}
-                            </figcaption>
-                        )}
-                    </figure>
-                )}
-
-                {/* Article Body Content */}
-                <div
-                    className="prose prose-lg max-w-none text-gray-800 leading-relaxed space-y-4"
-                    dangerouslySetInnerHTML={{ __html: article.content }}
-                />
-
-                {/* News Source Attribution Block */}
-                {article.source_name && (
-                    <div className="mt-8 pt-4 border-t border-gray-200 text-xs text-gray-500 italic">
-                        Source:{' '}
-                        {article.source_url ? (
-                            <a
-                                href={article.source_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-red-600 hover:underline font-medium"
+                        return (
+                            <Link
+                                key={article.id}
+                                href={getArticleUrl(catName, article.slug)}
+                                className="group border border-gray-200 rounded-lg p-4 hover:shadow-md transition flex flex-col justify-between"
                             >
-                                {article.source_name}
-                            </a>
-                        ) : (
-                            <span className="font-medium text-gray-700">{article.source_name}</span>
-                        )}
-                    </div>
-                )}
-            </article>
-        </>
+                                <div>
+                                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider block mb-1">
+                                        {catName}
+                                    </span>
+                                    <h2 className="font-bold text-gray-900 group-hover:text-red-600 line-clamp-2">
+                                        {article.title}
+                                    </h2>
+                                    <p className="text-xs text-gray-600 mt-2 line-clamp-3">{article.excerpt}</p>
+                                </div>
+                                <div className="mt-4 text-[11px] text-gray-400">
+                                    <span>{timeAgo(pubDate)}</span>
+                                </div>
+                            </Link>
+                        );
+                    })}
+                </div>
+            )}
+        </main>
     );
 }
