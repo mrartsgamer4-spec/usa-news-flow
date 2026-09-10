@@ -1,71 +1,110 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
-export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const slug = searchParams.get('slug');
-    const category = searchParams.get('category');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '12', 10);
-    const offset = (page - 1) * limit;
-
+// GET: All Articles
+export async function GET() {
     try {
-        if (typeof process !== 'undefined' && process.env) {
-            const { getRequestContext } = await import('@cloudflare/next-on-pages');
-            const { env } = getRequestContext();
+        const { getRequestContext } = await import('@cloudflare/next-on-pages');
+        const { env } = getRequestContext();
 
-            if (env?.DB) {
-                if (slug) {
-                    const article = await env.DB.prepare(
-                        `SELECT a.*, COALESCE(auth.name, 'Editorial Team') as author, auth.slug as author_slug 
-                         FROM articles a 
-                         LEFT JOIN authors auth ON a.author_id = auth.id 
-                         WHERE a.slug = ? LIMIT 1`
-                    ).bind(slug).first();
+        const result = await env.DB.prepare(
+            `SELECT * FROM articles ORDER BY published_at DESC`
+        ).all();
 
-                    if (!article) {
-                        return NextResponse.json({ error: 'Article not found' }, { status: 404 });
-                    }
-                    return NextResponse.json({ article });
-                }
+        return NextResponse.json(result.results || []);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
 
-                if (category) {
-                    const articles = await env.DB.prepare(
-                        `SELECT a.*, COALESCE(auth.name, 'Editorial Team') as author, auth.slug as author_slug 
-                         FROM articles a 
-                         LEFT JOIN authors auth ON a.author_id = auth.id 
-                         WHERE LOWER(a.category) = LOWER(?)
-                         ORDER BY a.published_at DESC LIMIT ? OFFSET ?`
-                    ).bind(category, limit, offset).all();
+// POST: Create Article
+export async function POST(req: NextRequest) {
+    try {
+        const { getRequestContext } = await import('@cloudflare/next-on-pages');
+        const { env } = getRequestContext();
+        const body = await req.json();
 
-                    const totalCountResult = await env.DB.prepare(
-                        `SELECT COUNT(*) as count FROM articles WHERE LOWER(category) = LOWER(?)`
-                    ).bind(category).first<{ count: number }>();
+        const { title, slug, excerpt, content, category, featured_image, status } = body;
+        const id = crypto.randomUUID();
+        const published_at = new Date().toISOString();
 
-                    return NextResponse.json({
-                        articles: articles.results || [],
-                        total: totalCountResult?.count || 0,
-                        page,
-                        totalPages: Math.ceil((totalCountResult?.count || 0) / limit),
-                    });
-                }
+        await env.DB.prepare(
+            `INSERT INTO articles (id, slug, title, excerpt, content, category, featured_image, status, published_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+            .bind(
+                id,
+                slug,
+                title,
+                excerpt || '',
+                content,
+                category,
+                featured_image || '',
+                status || 'published',
+                published_at
+            )
+            .run();
 
-                // Default: Fetch latest articles with limit
-                const articles = await env.DB.prepare(
-                    `SELECT a.*, COALESCE(auth.name, 'Editorial Team') as author, auth.slug as author_slug 
-                     FROM articles a 
-                     LEFT JOIN authors auth ON a.author_id = auth.id 
-                     ORDER BY a.published_at DESC LIMIT ? OFFSET ?`
-                ).bind(limit, offset).all();
+        return NextResponse.json({ success: true, id }, { status: 201 });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
 
-                return NextResponse.json({ articles: articles.results || [] });
-            }
+// PUT: Update Article
+export async function PUT(req: NextRequest) {
+    try {
+        const { getRequestContext } = await import('@cloudflare/next-on-pages');
+        const { env } = getRequestContext();
+        const body = await req.json();
+
+        const { id, title, slug, excerpt, content, category, featured_image, status } = body;
+
+        if (!id) {
+            return NextResponse.json({ error: 'Article ID is required' }, { status: 400 });
         }
 
-        return NextResponse.json({ articles: [] });
-    } catch (error) {
-        console.error('API News Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        await env.DB.prepare(
+            `UPDATE articles 
+       SET title = ?, slug = ?, excerpt = ?, content = ?, category = ?, featured_image = ?, status = ?, updated_at = ?
+       WHERE id = ?`
+        )
+            .bind(
+                title,
+                slug,
+                excerpt || '',
+                content,
+                category,
+                featured_image || '',
+                status || 'published',
+                new Date().toISOString(),
+                id
+            )
+            .run();
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+// DELETE: Delete Article
+export async function DELETE(req: NextRequest) {
+    try {
+        const { getRequestContext } = await import('@cloudflare/next-on-pages');
+        const { env } = getRequestContext();
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json({ error: 'Article ID required' }, { status: 400 });
+        }
+
+        await env.DB.prepare(`DELETE FROM articles WHERE id = ?`).bind(id).run();
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
