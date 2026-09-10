@@ -26,27 +26,54 @@ const NAV_ITEMS = [
             { label: "Elections", href: "/news/category/politics?sub=elections" },
         ],
     },
-    { label: "World", href: "/news/category/world" },
-    { label: "Business", href: "/news/category/business" },
     {
-        label: "Technology",
-        href: "/news/category/tech",
+        label: "World",
+        href: "/news/category/world",
         sub: [
-            { label: "AI News", href: "/news/category/tech?sub=ai-news" },
-            { label: "AI Tools & Tech", href: "/news/category/tech?sub=ai-tools" },
-            { label: "Cyber Security", href: "/news/category/tech?sub=cyber-security" },
+            { label: "Global Affairs", href: "/news/category/world?sub=global-affairs" },
+            { label: "Europe", href: "/news/category/world?sub=europe" },
+            { label: "Asia-Pacific", href: "/news/category/world?sub=asia-pacific" },
+            { label: "Middle East", href: "/news/category/world?sub=middle-east" },
         ],
     },
-    { label: "Health", href: "/news/category/health" },
+    {
+        label: "Business",
+        href: "/news/category/business",
+        sub: [
+            { label: "Economy", href: "/news/category/business?sub=economy" },
+            { label: "Markets", href: "/news/category/business?sub=markets" },
+            { label: "Finance", href: "/news/category/business?sub=finance" },
+            { label: "Real Estate", href: "/news/category/business?sub=real-estate" },
+        ],
+    },
+    {
+        label: "Technology",
+        href: "/news/category/technology",
+        sub: [
+            { label: "AI News", href: "/news/category/technology?sub=ai-news" },
+            { label: "AI Tools & Tech", href: "/news/category/technology?sub=ai-tools" },
+            { label: "Cyber Security", href: "/news/category/technology?sub=cyber-security" },
+            { label: "Gadgets", href: "/news/category/technology?sub=gadgets" },
+        ],
+    },
+    {
+        label: "Health",
+        href: "/news/category/health",
+        sub: [
+            { label: "Medicine", href: "/news/category/health?sub=medicine" },
+            { label: "Wellness", href: "/news/category/health?sub=wellness" },
+            { label: "Research", href: "/news/category/health?sub=research" },
+        ],
+    },
     {
         label: "Sports",
         href: "/news/category/sports",
         sub: [
-            { label: "Cricket", href: "/news/category/sports?sub=cricket" },
             { label: "Football", href: "/news/category/sports?sub=football" },
-            { label: "Tennis", href: "/news/category/sports?sub=tennis" },
             { label: "Basketball", href: "/news/category/sports?sub=basketball" },
-        ]
+            { label: "Cricket", href: "/news/category/sports?sub=cricket" },
+            { label: "Tennis", href: "/news/category/sports?sub=tennis" },
+        ],
     },
     {
         label: "Tools",

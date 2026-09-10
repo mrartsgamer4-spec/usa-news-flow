@@ -1,3 +1,12 @@
+export interface Author {
+    id: string;
+    name: string;
+    slug: string;
+    bio?: string;
+    avatar_url?: string;
+    role?: string;
+}
+
 export interface Article {
     id: string;
     slug: string;
