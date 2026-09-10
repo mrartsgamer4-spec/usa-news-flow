@@ -2,6 +2,33 @@ import { siteConfig } from '@/lib/siteConfig';
 import { Article } from '@/types/article';
 import { getArticleUrl } from '@/lib/urls';
 
+export function generateOrganizationSchema() {
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: siteConfig.name,
+        url: siteConfig.url,
+        logo: `${siteConfig.url}/logo.png`,
+        sameAs: [
+            siteConfig.twitterHandle ? `https://twitter.com/${siteConfig.twitterHandle}` : '',
+        ].filter(Boolean),
+    };
+}
+
+export function generateWebSiteSchema() {
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: siteConfig.name,
+        url: siteConfig.url,
+        potentialAction: {
+            '@type': 'SearchAction',
+            target: `${siteConfig.url}/search?q={search_term_string}`,
+            'query-input': 'required name=search_term_string',
+        },
+    };
+}
+
 export function generateNewsArticleSchema(article: Article) {
     const catName = typeof article.category === 'string'
         ? article.category

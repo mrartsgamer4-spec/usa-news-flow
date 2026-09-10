@@ -1,85 +1,79 @@
+import type { Metadata } from 'next';
 import { siteConfig } from '@/lib/siteConfig';
-import { Article } from '@/types/article';
-import { getArticleUrl } from '@/lib/urls';
+import '@/app/globals.css';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
+import { generateOrganizationSchema, generateWebSiteSchema } from '@/lib/seoSchemas';
+import JsonLd from '@/components/seo/JsonLd';
 
-export function generateOrganizationSchema() {
-    return {
-        '@context': 'https://schema.org',
-        '@type': 'Organization',
-        name: siteConfig.name,
+export const metadata: Metadata = {
+    metadataBase: new URL(siteConfig.url),
+    title: {
+        default: `${siteConfig.name} | Latest Breaking News & Updates`,
+        template: `%s | ${siteConfig.name}`,
+    },
+    description: siteConfig.description,
+    keywords: ['USA News', 'Breaking News', 'Latest News', 'US Politics', 'Tech News', 'Finance News'],
+    authors: [{ name: siteConfig.publisher }],
+    creator: siteConfig.publisher,
+    publisher: siteConfig.publisher,
+    robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+            index: true,
+            follow: true,
+            'max-video-preview': -1,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+        },
+    },
+    icons: {
+        icon: '/favicon.ico',
+    },
+    openGraph: {
+        type: 'website',
+        locale: siteConfig.locale || 'en_US',
         url: siteConfig.url,
-        logo: `${siteConfig.url}/logo.png`,
-        sameAs: [
-            siteConfig.twitterHandle ? `https://twitter.com/${siteConfig.twitterHandle}` : '',
-        ].filter(Boolean),
-    };
-}
-
-export function generateWebSiteSchema() {
-    return {
-        '@context': 'https://schema.org',
-        '@type': 'WebSite',
-        name: siteConfig.name,
-        url: siteConfig.url,
-        potentialAction: {
-            '@type': 'SearchAction',
-            target: `${siteConfig.url}/search?q={search_term_string}`,
-            'query-input': 'required name=search_term_string',
-        },
-    };
-}
-
-export function generateNewsArticleSchema(article: Article) {
-    const catName = typeof article.category === 'string'
-        ? article.category
-        : article.category?.name || 'News';
-
-    const authorName = typeof article.author === 'string'
-        ? article.author
-        : article.author?.name || 'Editorial Team';
-
-    const canonicalUrl = article.canonical_url || `${siteConfig.url}${getArticleUrl(catName, article.slug)}`;
-    const imageUrl = article.featured_image || article.coverImage || siteConfig.defaultOgImage;
-    const publishDate = article.published_at || article.publishedAt || new Date().toISOString();
-    const updateDate = article.updated_at || article.updatedAt || publishDate;
-
-    return {
-        '@context': 'https://schema.org',
-        '@type': 'NewsArticle',
-        mainEntityOfPage: {
-            '@type': 'WebPage',
-            '@id': canonicalUrl,
-        },
-        headline: article.title,
-        description: article.excerpt || article.meta_description || article.title,
-        image: [imageUrl],
-        datePublished: publishDate,
-        dateModified: updateDate,
-        author: {
-            '@type': 'Person',
-            name: authorName,
-        },
-        publisher: {
-            '@type': 'Organization',
-            name: siteConfig.name,
-            logo: {
-                '@type': 'ImageObject',
-                url: `${siteConfig.url}/logo.png`,
+        title: siteConfig.name,
+        description: siteConfig.description,
+        siteName: siteConfig.name,
+        images: [
+            {
+                url: `${siteConfig.url}${siteConfig.defaultOgImage || '/og-image.png'}`,
+                width: 1200,
+                height: 630,
+                alt: siteConfig.name,
             },
-        },
-        articleSection: catName,
-    };
-}
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: siteConfig.name,
+        description: siteConfig.description,
+        creator: siteConfig.twitterHandle,
+        images: [`${siteConfig.url}${siteConfig.defaultOgImage || '/og-image.png'}`],
+    },
+};
 
-export function generateBreadcrumbSchema(items: { name: string; url: string }[]) {
-    return {
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: items.map((item, index) => ({
-            '@type': 'ListItem',
-            position: index + 1,
-            name: item.name,
-            item: item.url.startsWith('http') ? item.url : `${siteConfig.url}${item.url}`,
-        })),
-    };
+export default function RootLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    const orgSchema = generateOrganizationSchema();
+    const websiteSchema = generateWebSiteSchema();
+
+    return (
+        <html lang="en">
+            <head>
+                <JsonLd data={[orgSchema, websiteSchema]} />
+            </head>
+            <body className="bg-gray-50 text-gray-900 min-h-screen flex flex-col antialiased">
+                <Header />
+                <main className="flex-grow">{children}</main>
+                <Footer />
+            </body>
+        </html>
+    );
 }
