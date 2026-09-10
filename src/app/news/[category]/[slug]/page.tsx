@@ -88,16 +88,22 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {articles.map((article) => {
-                        const catName = typeof article.category === 'string'
-                            ? article.category
-                            : article.category?.name || categoryTitle;
+                        const rawCat = article.category as unknown;
+                        let catName = categoryTitle;
 
+                        if (typeof rawCat === 'string') {
+                            catName = rawCat;
+                        } else if (rawCat && typeof rawCat === 'object' && 'name' in rawCat) {
+                            catName = String((rawCat as { name: string }).name || categoryTitle);
+                        }
+
+                        const articleSlug = article.slug || '';
                         const pubDate = article.published_at || article.publishedAt;
 
                         return (
                             <Link
                                 key={article.id}
-                                href={getArticleUrl(catName, article.slug)}
+                                href={getArticleUrl(catName, articleSlug)}
                                 className="group border border-gray-200 rounded-lg p-4 hover:shadow-md transition flex flex-col justify-between"
                             >
                                 <div>
