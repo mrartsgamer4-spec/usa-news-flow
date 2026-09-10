@@ -1,12 +1,3 @@
-export interface Author {
-    id: string;
-    name: string;
-    slug: string;
-    bio?: string;
-    avatar_url?: string;
-    role?: string;
-}
-
 export interface Article {
     id: string;
     slug: string;
@@ -21,7 +12,7 @@ export interface Article {
     author_id?: string;
     author?: string;
     author_slug?: string;
-    status?: 'published' | 'draft' | 'archived';
+    status?: string;
     published_at: string;
     updated_at?: string;
     meta_title?: string;

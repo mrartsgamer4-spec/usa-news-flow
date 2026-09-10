@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Clock, Sun, ArrowRight } from "lucide-react";
+import NewsCategorySelection from "@/components/news/NewsCategorySelection";
 
 export default function HomePage() {
     return (
@@ -40,8 +41,6 @@ export default function HomePage() {
 
                     {/* Secondary Hero List (Middle 3 Cols) */}
                     <div className="lg:col-span-3 space-y-4">
-
-                        {/* Item 1 */}
                         <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex gap-3">
                             <div className="relative w-20 h-20 flex-shrink-0 rounded overflow-hidden">
                                 <Image src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=300&q=80" alt="News" fill className="object-cover" />
@@ -60,7 +59,6 @@ export default function HomePage() {
                             </div>
                         </div>
 
-                        {/* Item 2 */}
                         <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex gap-3">
                             <div className="relative w-20 h-20 flex-shrink-0 rounded overflow-hidden">
                                 <Image src="https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=300&q=80" alt="News" fill className="object-cover" />
@@ -79,7 +77,6 @@ export default function HomePage() {
                             </div>
                         </div>
 
-                        {/* Item 3 */}
                         <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex gap-3">
                             <div className="relative w-20 h-20 flex-shrink-0 rounded overflow-hidden">
                                 <Image src="https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=300&q=80" alt="News" fill className="object-cover" />
@@ -98,7 +95,6 @@ export default function HomePage() {
                             </div>
                         </div>
 
-                        {/* Item 4 */}
                         <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex gap-3">
                             <div className="relative w-20 h-20 flex-shrink-0 rounded overflow-hidden">
                                 <Image src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=300&q=80" alt="News" fill className="object-cover" />
@@ -116,13 +112,10 @@ export default function HomePage() {
                                 </div>
                             </div>
                         </div>
-
                     </div>
 
                     {/* Right Sidebar Widget Area (Right 3 Cols) */}
                     <div className="lg:col-span-3 space-y-6">
-
-                        {/* Breaking News Feed */}
                         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
                             <div className="flex items-center justify-between border-b pb-2 mb-3">
                                 <span className="bg-red-600 text-white text-[11px] font-black uppercase px-2 py-0.5 rounded tracking-wide">
@@ -156,7 +149,6 @@ export default function HomePage() {
                             </Link>
                         </div>
 
-                        {/* Weather Widget */}
                         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
                             <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">
                                 WEATHER – NEW YORK
@@ -179,15 +171,12 @@ export default function HomePage() {
                                 View Full Forecast <ArrowRight size={12} />
                             </Link>
                         </div>
-
                     </div>
 
                 </div>
 
                 {/* ================= SECOND SECTION: TOP STORIES & POPULAR ARTICLES ================= */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-4">
-
-                    {/* TOP STORIES (Left 8 Cols) */}
                     <div className="lg:col-span-8">
                         <div className="border-b-2 border-red-600 pb-1 mb-4 flex items-center">
                             <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wider">
@@ -196,8 +185,6 @@ export default function HomePage() {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-
-                            {/* Card 1 */}
                             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm flex flex-col justify-between">
                                 <div>
                                     <div className="relative h-28 w-full">
@@ -218,7 +205,6 @@ export default function HomePage() {
                                 </div>
                             </div>
 
-                            {/* Card 2 */}
                             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm flex flex-col justify-between">
                                 <div>
                                     <div className="relative h-28 w-full">
@@ -239,7 +225,6 @@ export default function HomePage() {
                                 </div>
                             </div>
 
-                            {/* Card 3 */}
                             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm flex flex-col justify-between">
                                 <div>
                                     <div className="relative h-28 w-full">
@@ -260,7 +245,6 @@ export default function HomePage() {
                                 </div>
                             </div>
 
-                            {/* Card 4 */}
                             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm flex flex-col justify-between">
                                 <div>
                                     <div className="relative h-28 w-full">
@@ -280,11 +264,9 @@ export default function HomePage() {
                                     <span>8 hours ago</span>
                                 </div>
                             </div>
-
                         </div>
                     </div>
 
-                    {/* POPULAR ARTICLES (Right 4 Cols) */}
                     <div className="lg:col-span-4">
                         <div className="border-b-2 border-red-600 pb-1 mb-4 flex items-center">
                             <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wider">
@@ -293,8 +275,6 @@ export default function HomePage() {
                         </div>
 
                         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm space-y-4">
-
-                            {/* Item 1 */}
                             <div className="flex items-center gap-3">
                                 <div className="w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
                                     1
@@ -313,7 +293,6 @@ export default function HomePage() {
                                 </div>
                             </div>
 
-                            {/* Item 2 */}
                             <div className="flex items-center gap-3 border-t pt-3">
                                 <div className="w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
                                     2
@@ -332,7 +311,6 @@ export default function HomePage() {
                                 </div>
                             </div>
 
-                            {/* Item 3 */}
                             <div className="flex items-center gap-3 border-t pt-3">
                                 <div className="w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
                                     3
@@ -350,11 +328,12 @@ export default function HomePage() {
                                     <Image src="https://images.unsplash.com/photo-1426604966848-d7adac402bff?auto=format&fit=crop&w=200&q=80" alt="Popular" fill className="object-cover" />
                                 </div>
                             </div>
-
                         </div>
                     </div>
-
                 </div>
+
+                {/* ================= THIRD SECTION: CATEGORY SELECTION (BEFORE FOOTER) ================= */}
+                <NewsCategorySelection />
 
             </div>
         </div>

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-// Category -> Subcategory Mapping Data
 const CATEGORY_MAP: Record<string, string[]> = {
     'U.S. News': ['Donald Trump', 'White House News', 'Breaking News'],
     'Politics': ['Congress', 'Elections', 'Policy & Law'],
@@ -28,6 +27,7 @@ export default function AdminDashboard() {
         category: 'U.S. News',
         sub_category: 'Donald Trump',
         content: '',
+        status: 'published',
     });
 
     const fetchArticles = async () => {
@@ -46,7 +46,6 @@ export default function AdminDashboard() {
         fetchArticles();
     }, []);
 
-    // Handle Title and Slug Generation
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const title = e.target.value;
         const slug = title
@@ -61,7 +60,6 @@ export default function AdminDashboard() {
         }));
     };
 
-    // Category change handler to reset sub-category automatically
     const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedCategory = e.target.value;
         const availableSubCategories = CATEGORY_MAP[selectedCategory] || [];
@@ -99,6 +97,7 @@ export default function AdminDashboard() {
                     category: 'U.S. News',
                     sub_category: 'Donald Trump',
                     content: '',
+                    status: 'published',
                 });
                 setEditingId(null);
                 fetchArticles();
@@ -120,10 +119,11 @@ export default function AdminDashboard() {
             slug: article.slug || '',
             featured_image: article.featured_image || '',
             image_caption: article.image_caption || '',
-            writer_name: article.writer_name || '',
+            writer_name: article.author || '',
             category: article.category || 'U.S. News',
-            sub_category: article.sub_category || 'Donald Trump',
+            sub_category: article.subcategory || 'Donald Trump',
             content: article.content || '',
+            status: article.status || 'published',
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -199,7 +199,7 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-                {/* 5. Writer Name, 6. Main Category & Sub Category */}
+                {/* 5. Writer Name, Category & Sub Category */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-sm font-bold text-gray-700">5. Writer Name</label>
@@ -253,6 +253,19 @@ export default function AdminDashboard() {
                     />
                 </div>
 
+                {/* Status Selection */}
+                <div>
+                    <label className="block text-sm font-bold text-gray-700">Post Status</label>
+                    <select
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        className="w-full md:w-1/3 mt-1 p-2 border rounded text-sm"
+                    >
+                        <option value="published">Published</option>
+                        <option value="draft">Draft</option>
+                    </select>
+                </div>
+
                 {/* 8. Publish Button */}
                 <div className="flex gap-4 pt-2">
                     <button
@@ -268,7 +281,7 @@ export default function AdminDashboard() {
                             onClick={() => {
                                 setEditingId(null);
                                 setFormData({
-                                    title: '', slug: '', featured_image: '', image_caption: '', writer_name: '', category: 'U.S. News', sub_category: 'Donald Trump', content: ''
+                                    title: '', slug: '', featured_image: '', image_caption: '', writer_name: '', category: 'U.S. News', sub_category: 'Donald Trump', content: '', status: 'published'
                                 });
                             }}
                             className="bg-gray-500 text-white px-5 py-2.5 rounded text-sm hover:bg-gray-600"
@@ -297,7 +310,7 @@ export default function AdminDashboard() {
                                         {art.title} ↗
                                     </Link>
                                     <p className="text-xs text-gray-500 mt-1">
-                                        Category: <span className="font-bold text-gray-700">{art.category}</span> | Sub Category: <span className="font-bold text-gray-700">{art.sub_category || 'N/A'}</span> | Writer: {art.writer_name || 'N/A'}
+                                        Category: <span className="font-bold text-gray-700">{art.category}</span> | Sub Category: <span className="font-bold text-gray-700">{art.subcategory || 'N/A'}</span> | Author: {art.author || 'N/A'} | Status: <span className="uppercase text-green-600 font-semibold">{art.status}</span>
                                     </p>
                                 </div>
                                 <div className="flex gap-4 text-xs font-bold">
