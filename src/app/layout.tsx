@@ -1,10 +1,16 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { siteConfig } from '@/lib/siteConfig';
 import '@/app/globals.css';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { generateOrganizationSchema, generateWebSiteSchema } from '@/lib/seoSchemas';
 import JsonLd from '@/components/seo/JsonLd';
+
+export const viewport: Viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+};
 
 export const metadata: Metadata = {
     metadataBase: new URL(siteConfig.url),
@@ -69,9 +75,9 @@ export default function RootLayout({
             <head>
                 <JsonLd data={[orgSchema, websiteSchema]} />
             </head>
-            <body className="bg-gray-50 text-gray-900 min-h-screen flex flex-col antialiased">
+            <body className="bg-gray-100 text-gray-900 min-h-screen flex flex-col antialiased text-base">
                 <Header />
-                <main className="flex-grow">{children}</main>
+                <main className="flex-grow w-full">{children}</main>
                 <Footer />
             </body>
         </html>
