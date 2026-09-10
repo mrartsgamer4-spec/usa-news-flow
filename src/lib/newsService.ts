@@ -3,32 +3,65 @@ import { Article } from '@/types/article';
 
 export async function getPublishedArticles(): Promise<Article[]> {
     try {
-        const db = getRequestContext().env.DB;
-        if (!db) return [];
+        const { env } = getRequestContext();
+        const db = env.DB;
 
-        const { results } = await db.prepare(
-            "SELECT * FROM articles WHERE status = 'published' ORDER BY published_at DESC LIMIT 20"
-        ).all();
+        if (!db) {
+            console.error('D1 binding DB not found');
+            return [];
+        }
 
-        return (results as unknown) as Article[];
+        const { results } = await db
+            .prepare(`
+                SELECT *
+                FROM articles
+                WHERE status = 'published'
+                ORDER BY published_at DESC
+                LIMIT 20
+            `)
+            .all();
+
+        return results as unknown as Article[];
     } catch (error) {
-        console.error("Error fetching articles:", error);
+        console.error(
+            'Error fetching published articles:',
+            error
+        );
+
         return [];
     }
 }
 
-export async function getArticleBySlug(slug: string): Promise<Article | null> {
+export async function getArticleBySlug(
+    slug: string
+): Promise<Article | null> {
     try {
-        const db = getRequestContext().env.DB;
-        if (!db) return null;
+        const { env } = getRequestContext();
+        const db = env.DB;
 
-        const article = await db.prepare(
-            "SELECT * FROM articles WHERE slug = ? AND status = 'published'"
-        ).bind(slug).first();
+        if (!db) {
+            console.error('D1 binding DB not found');
+            return null;
+        }
 
-        return (article as unknown) as Article | null;
+        const article = await db
+            .prepare(`
+                SELECT *
+                FROM articles
+                WHERE slug = ?
+                AND status = 'published'
+                LIMIT 1
+            `)
+            .bind(slug)
+            .first();
+
+        return article as unknown as Article | null;
     } catch (error) {
-        console.error("Error fetching article by slug:", error);
+        console.error(
+            'Error fetching article:',
+            error
+        );
+
         return null;
     }
 }
