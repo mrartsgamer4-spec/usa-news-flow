@@ -1,101 +1,146 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Search, ChevronDown } from 'lucide-react';
+
+const NAV_ITEMS = [
+    { label: "HOME", href: "/" },
+    {
+        label: "U.S. NEWS",
+        href: "/news/category/us-news",
+        sub: [
+            { label: "Donald Trump", href: "/news/category/us-news?sub=donald-trump" },
+            { label: "White House News", href: "/news/category/us-news?sub=white-house" },
+            { label: "Breaking News", href: "/news/category/us-news?sub=breaking-news" },
+        ],
+    },
+    {
+        label: "POLITICS",
+        href: "/news/category/politics",
+        sub: [
+            { label: "Congress", href: "/news/category/politics?sub=congress" },
+            { label: "Elections", href: "/news/category/politics?sub=elections" },
+            { label: "Policy & Law", href: "/news/category/politics?sub=policy" },
+        ],
+    },
+    { label: "WORLD", href: "/news/category/world" },
+    { label: "BUSINESS", href: "/news/category/business" },
+    {
+        label: "TECHNOLOGY",
+        href: "/news/category/technology",
+        sub: [
+            { label: "AI News", href: "/news/category/technology?sub=ai-news" },
+            { label: "Latest AI News", href: "/news/category/technology?sub=latest-ai" },
+            { label: "AI Technology", href: "/news/category/technology?sub=ai-tech" },
+        ],
+    },
+    { label: "HEALTH", href: "/news/category/health" },
+    {
+        label: "SPORTS",
+        href: "/news/category/sports",
+        sub: [
+            { label: "NFL & Football", href: "/news/category/sports?sub=football" },
+            { label: "NBA & Basketball", href: "/news/category/sports?sub=basketball" },
+            { label: "Cricket", href: "/news/category/sports?sub=cricket" },
+        ],
+    },
+    {
+        label: "TOOLS",
+        href: "/tools",
+        sub: [
+            { label: "Image to PDF", href: "/tools/image-to-pdf" },
+            { label: "PDF to Image", href: "/tools/pdf-to-image" },
+            { label: "QR Code Generator", href: "/tools/qr-code" },
+            { label: "Word to PDF", href: "/tools/word-to-pdf" },
+        ],
+    },
+    {
+        label: "CALCULATORS",
+        href: "/calculators",
+        sub: [
+            { label: "Salary Calculator", href: "/calculators/salary" },
+            { label: "Tax Calculator", href: "/calculators/tax" },
+            { label: "Mortgage Calculator", href: "/calculators/mortgage" },
+            { label: "Loan Calculator", href: "/calculators/loan" },
+            { label: "Percentage Calculator", href: "/calculators/percentage" },
+        ],
+    },
+];
 
 export default function Header() {
-    const [isToolsOpen, setIsToolsOpen] = useState(false);
-    const [isCalculatorsOpen, setIsCalculatorsOpen] = useState(false);
+    const [nyTime, setNyTime] = useState<string>('');
+
+    useEffect(() => {
+        const updateClock = () => {
+            const now = new Date();
+            const timeString = now.toLocaleDateString('en-US', {
+                timeZone: 'America/New_York',
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+            }) + ' • ' + now.toLocaleTimeString('en-US', {
+                timeZone: 'America/New_York',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+            }) + ' EDT';
+            setNyTime(timeString);
+        };
+
+        updateClock();
+        const interval = setInterval(updateClock, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
-        <header className="w-full bg-white shadow-xs sticky top-0 z-50">
-            {/* Main Branding Logo */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between border-b border-gray-100">
-                <Link href="/" className="flex items-center gap-1">
-                    <span className="text-3xl sm:text-4xl font-black tracking-tight text-red-600 uppercase">
-                        USA NEWS <span className="text-gray-900 font-bold">FLOW</span>
+        <header className="w-full bg-white border-b border-gray-200">
+            {/* Top Logo & Live US Time Header */}
+            <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+                <Link href="/" className="flex items-center">
+                    <span className="text-3xl font-black text-red-600 tracking-tight">
+                        USA NEWS <span className="text-black font-semibold">FLOW</span>
                     </span>
                 </Link>
-                <div className="hidden sm:block text-right text-xs text-gray-500 font-medium">
-                    Your Daily Flow of U.S. News & Insights
+
+                <div className="flex items-center gap-4 text-xs font-semibold text-gray-700">
+                    <span>{nyTime || 'Mon, Sep 7, 2026 • 03:40:44 AM EDT'}</span>
+                    <button aria-label="Search" className="hover:text-red-600">
+                        <Search size={18} />
+                    </button>
                 </div>
             </div>
 
-            {/* Navigation Bar */}
-            <nav className="bg-red-600 text-white shadow-md">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between overflow-x-auto">
-                    <div className="flex items-center space-x-1 sm:space-x-3 text-xs sm:text-sm font-bold uppercase tracking-wider whitespace-nowrap py-2.5">
-                        <Link href="/" className="px-3 py-1.5 hover:bg-red-700 rounded transition">
-                            Home
-                        </Link>
-                        <Link href="/news/category/u-s-news" className="px-3 py-1.5 hover:bg-red-700 rounded transition">
-                            U.S. News
-                        </Link>
-                        <Link href="/news/category/politics" className="px-3 py-1.5 hover:bg-red-700 rounded transition">
-                            Politics
-                        </Link>
-                        <Link href="/news/category/world" className="px-3 py-1.5 hover:bg-red-700 rounded transition">
-                            World
-                        </Link>
-                        <Link href="/news/category/business" className="px-3 py-1.5 hover:bg-red-700 rounded transition">
-                            Business
-                        </Link>
-                        <Link href="/news/category/technology" className="px-3 py-1.5 hover:bg-red-700 rounded transition">
-                            Technology
-                        </Link>
-                        <Link href="/news/category/health" className="px-3 py-1.5 hover:bg-red-700 rounded transition">
-                            Health
-                        </Link>
-                        <Link href="/news/category/sports" className="px-3 py-1.5 hover:bg-red-700 rounded transition">
-                            Sports
-                        </Link>
+            {/* Red Navbar */}
+            <nav className="bg-red-600 text-white">
+                <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1 overflow-visible">
+                    {NAV_ITEMS.map((item) => (
+                        <div key={item.label} className="relative group py-2.5">
+                            <Link
+                                href={item.href}
+                                className="px-3 py-1.5 text-xs font-bold hover:bg-red-700 rounded transition flex items-center gap-1 uppercase tracking-wider"
+                            >
+                                {item.label}
+                                {item.sub && <ChevronDown size={13} className="group-hover:rotate-180 transition-transform" />}
+                            </Link>
 
-                        {/* Tools Dropdown */}
-                        <div className="relative" onMouseEnter={() => setIsToolsOpen(true)} onMouseLeave={() => setIsToolsOpen(false)}>
-                            <button className="px-3 py-1.5 hover:bg-red-700 rounded transition flex items-center gap-1 uppercase">
-                                🛠 Tools ▾
-                            </button>
-                            {isToolsOpen && (
-                                <div className="absolute left-0 mt-0 w-48 bg-white text-gray-900 rounded-md shadow-lg py-2 border border-gray-100 z-50 normal-case font-medium">
-                                    <Link href="/tools/image-to-pdf" className="block px-4 py-2 hover:bg-red-50 hover:text-red-600">
-                                        🖼 Image to PDF
-                                    </Link>
-                                    <Link href="/tools/pdf-to-image" className="block px-4 py-2 hover:bg-red-50 hover:text-red-600">
-                                        📄 PDF to Image
-                                    </Link>
-                                    <Link href="/tools/qr-code" className="block px-4 py-2 hover:bg-red-50 hover:text-red-600">
-                                        📲 QR Code Generator
-                                    </Link>
-                                    <Link href="/tools/word-to-pdf" className="block px-4 py-2 hover:bg-red-50 hover:text-red-600">
-                                        📝 Word to PDF
-                                    </Link>
+                            {item.sub && (
+                                <div className="absolute top-full left-0 hidden group-hover:block bg-white text-gray-800 shadow-xl border border-gray-200 py-1.5 min-w-[190px] rounded-b-md z-50">
+                                    {item.sub.map((subItem) => (
+                                        <Link
+                                            key={subItem.label}
+                                            href={subItem.href}
+                                            className="block px-4 py-2 text-xs font-semibold hover:bg-red-50 hover:text-red-600 border-b border-gray-100 last:border-0"
+                                        >
+                                            {subItem.label}
+                                        </Link>
+                                    ))}
                                 </div>
                             )}
                         </div>
-
-                        {/* Calculators Dropdown */}
-                        <div className="relative" onMouseEnter={() => setIsCalculatorsOpen(true)} onMouseLeave={() => setIsCalculatorsOpen(false)}>
-                            <button className="px-3 py-1.5 hover:bg-red-700 rounded transition flex items-center gap-1 uppercase">
-                                🧮 Calculators ▾
-                            </button>
-                            {isCalculatorsOpen && (
-                                <div className="absolute left-0 mt-0 w-52 bg-white text-gray-900 rounded-md shadow-lg py-2 border border-gray-100 z-50 normal-case font-medium">
-                                    <Link href="/calculators/salary" className="block px-4 py-2 hover:bg-red-50 hover:text-red-600">
-                                        💵 Salary Calculator
-                                    </Link>
-                                    <Link href="/calculators/tax" className="block px-4 py-2 hover:bg-red-50 hover:text-red-600">
-                                        🏛 Tax Calculator
-                                    </Link>
-                                    <Link href="/calculators/mortgage" className="block px-4 py-2 hover:bg-red-50 hover:text-red-600">
-                                        🏠 Mortgage Calculator
-                                    </Link>
-                                    <Link href="/calculators/loan" className="block px-4 py-2 hover:bg-red-50 hover:text-red-600">
-                                        💳 Loan Calculator
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    ))}
                 </div>
             </nav>
         </header>
