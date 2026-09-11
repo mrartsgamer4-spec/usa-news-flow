@@ -1,12 +1,21 @@
 export function getArticleUrl(category: any, slug: string): string {
-    const cleanSlug = (slug || '')
-        .toString()
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
+    let catSlug = 'general';
 
-    return `/news/article/${cleanSlug}`;
+    if (typeof category === 'string') {
+        catSlug = category;
+    } else if (category && typeof category === 'object' && 'name' in category) {
+        catSlug = category.name || 'general';
+    }
+
+    const cleanCategory = encodeURIComponent(
+        catSlug.toString().toLowerCase().trim().replace(/\s+/g, '-')
+    );
+
+    const cleanSlug = encodeURIComponent(
+        (slug || '').toString().trim()
+    );
+
+    return `/news/${cleanCategory}/${cleanSlug}`;
 }
 
 export function getCategoryUrl(category: any): string {
@@ -18,22 +27,13 @@ export function getCategoryUrl(category: any): string {
         catSlug = category.name || 'general';
     }
 
-    const cleanCategory = catSlug
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
+    const cleanCategory = encodeURIComponent(
+        catSlug.toString().toLowerCase().trim().replace(/\s+/g, '-')
+    );
 
-    return `/news/category/${cleanCategory || 'general'}`;
+    return `/news/category/${cleanCategory}`;
 }
 
 export function getAuthorUrl(slug: string): string {
-    const cleanSlug = (slug || '')
-        .toString()
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-
-    return `/author/${cleanSlug || 'editorial-staff'}`;
+    return `/author/${encodeURIComponent((slug || 'editorial-staff').toString().trim())}`;
 }
