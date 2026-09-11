@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
     Clock, ChevronDown, Wrench, Calculator, Home,
     FileText, Image as ImageIcon, QrCode, Type,
-    DollarSign, Percent, Landmark, Menu, X
+    DollarSign, Percent, Landmark, Menu, X, Search, MapPin
 } from 'lucide-react';
 
 const NAVIGATION_CONFIG = [
@@ -107,7 +107,7 @@ export default function Header() {
             setDcDate(now.toLocaleDateString('en-US', {
                 timeZone: 'America/New_York',
                 weekday: 'long',
-                month: 'long',
+                month: 'short',
                 day: 'numeric',
                 year: 'numeric',
             }));
@@ -115,6 +115,7 @@ export default function Header() {
                 timeZone: 'America/New_York',
                 hour: '2-digit',
                 minute: '2-digit',
+                second: '2-digit',
                 hour12: true,
             }) + ' EDT');
         };
@@ -126,18 +127,30 @@ export default function Header() {
     return (
         <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
             {/* Top Bar */}
-            <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-4">
-                <Link href="/" className="flex flex-col items-start">
-                    <div className="flex items-center text-3xl sm:text-4xl font-black tracking-tight italic">
-                        <span className="bg-[#cc0000] text-white px-2 py-0.5 rounded mr-1.5 uppercase">USA</span>
+            <div className="max-w-7xl mx-auto px-4 py-2.5 sm:py-4 flex items-center justify-between">
+
+                {/* কিশোরগঞ্জ জার্নাল স্টাইল মোবাইল মেনু বাটন */}
+                <button
+                    onClick={() => setMobileOpen(!mobileOpen)}
+                    className="lg:hidden p-1.5 text-gray-800 hover:text-[#cc0000] focus:outline-none"
+                    aria-label="Toggle Menu"
+                >
+                    {mobileOpen ? <X size={26} /> : <Menu size={26} />}
+                </button>
+
+                {/* লোগো (মোবাইলে সেন্টারে থাকবে, ডেস্কটপে বামে) */}
+                <Link href="/" prefetch={false} className="flex flex-col items-center lg:items-start">
+                    <div className="flex items-center text-2xl sm:text-4xl font-black tracking-tight italic">
+                        <span className="bg-[#cc0000] text-white px-2 py-0.5 rounded mr-1.5 uppercase text-lg sm:text-3xl">USA</span>
                         <span className="text-[#cc0000] uppercase">NEWS</span>
                         <span className="text-gray-900 uppercase font-light ml-1.5">FLOW</span>
                     </div>
-                    <span className="text-xs sm:text-sm text-gray-500 font-semibold tracking-wide mt-0.5">
+                    <span className="hidden sm:block text-xs sm:text-sm text-gray-500 font-semibold tracking-wide mt-0.5">
                         Your Daily Flow of U.S. News & Insights
                     </span>
                 </Link>
 
+                {/* ডেস্কটপ লাইভ টাইম বক্স */}
                 <div className="hidden md:flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
                     <div className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-700 bg-white">
                         <Clock size={20} />
@@ -149,6 +162,7 @@ export default function Header() {
                     </div>
                 </div>
 
+                {/* মোবাইল ডানের সার্চ আইকন ও ডেস্কটপ সোশ্যাল লিংকস */}
                 <div className="flex items-center gap-3">
                     <div className="hidden sm:flex items-center gap-2">
                         <a href="#" className="w-8 h-8 rounded-full bg-[#3b5998] text-white flex items-center justify-center text-sm font-bold shadow-sm">f</a>
@@ -156,30 +170,36 @@ export default function Header() {
                         <a href="#" className="w-8 h-8 rounded-full bg-[#e1306c] text-white flex items-center justify-center text-sm font-bold shadow-sm">ig</a>
                         <a href="#" className="w-8 h-8 rounded-full bg-[#ff0000] text-white flex items-center justify-center text-sm font-bold shadow-sm">yt</a>
                     </div>
-                    <button
-                        onClick={() => setMobileOpen(!mobileOpen)}
-                        className="lg:hidden p-2 text-gray-700 hover:text-[#cc0000]"
-                    >
-                        {mobileOpen ? <X size={28} /> : <Menu size={28} />}
+                    <button className="lg:hidden p-1.5 text-gray-700 hover:text-[#cc0000]">
+                        <Search size={22} />
                     </button>
                 </div>
             </div>
 
+            {/* কিশোরগঞ্জ জার্নাল স্টাইল মোবাইল লাইভ টাইম স্ট্রিপ */}
+            <div className="lg:hidden bg-gray-50 border-t border-b border-gray-200 py-1.5 px-4 text-center">
+                <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-gray-700">
+                    <MapPin size={13} className="text-[#cc0000] shrink-0" />
+                    <span>New York | {dcDate} | <strong className="text-[#cc0000] font-black">{dcTime}</strong></span>
+                </div>
+            </div>
+
             {/* Red Navbar with Pure White Text */}
-            <nav className="bg-[#cc0000] text-white shadow-md">
+            <nav className="hidden lg:block bg-[#cc0000] text-white shadow-md">
                 <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
 
                     {/* Desktop Menu */}
-                    <div className="hidden lg:flex items-center space-x-1">
+                    <div className="flex items-center space-x-1">
                         {NAVIGATION_CONFIG.map((item) => {
                             const isActive = item.isHome ? pathname === '/' : pathname.startsWith(item.href);
                             return (
                                 <div key={item.label} className="relative group">
                                     <Link
                                         href={item.href}
+                                        prefetch={false}
                                         className={`px-3.5 py-3 text-[14px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 transition duration-150 ${isActive
-                                                ? 'bg-[#990000] text-white'
-                                                : 'text-white hover:bg-[#b30000]'
+                                            ? 'bg-[#990000] text-white'
+                                            : 'text-white hover:bg-[#b30000]'
                                             }`}
                                     >
                                         {item.isHome && <Home size={15} />}
@@ -193,6 +213,7 @@ export default function Header() {
                                                 <Link
                                                     key={subItem.label}
                                                     href={subItem.href}
+                                                    prefetch={false}
                                                     className="block px-4 py-2.5 text-xs font-bold text-gray-800 hover:bg-red-50 hover:text-[#cc0000] border-b border-gray-50 last:border-0 transition"
                                                 >
                                                     {subItem.label}
@@ -206,7 +227,7 @@ export default function Header() {
                     </div>
 
                     {/* Tools & Calculators */}
-                    <div className="hidden lg:flex items-center space-x-2 py-2 pl-4 border-l border-red-400">
+                    <div className="flex items-center space-x-2 py-2 pl-4 border-l border-red-400">
                         <div className="relative group">
                             <button className="px-3 py-1.5 bg-white text-gray-900 rounded font-bold text-xs uppercase flex items-center gap-1.5 hover:bg-gray-100 shadow-sm transition">
                                 <Wrench size={13} className="text-[#cc0000]" />
@@ -215,7 +236,7 @@ export default function Header() {
                             </button>
                             <div className="absolute top-full right-0 hidden group-hover:block bg-white text-gray-800 shadow-2xl border border-gray-200 rounded-b-lg w-52 z-50 py-1">
                                 {TOOLS_ITEMS.map((tool) => (
-                                    <Link key={tool.label} href={tool.href} className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 hover:text-[#cc0000] text-xs font-semibold">
+                                    <Link key={tool.label} href={tool.href} prefetch={false} className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 hover:text-[#cc0000] text-xs font-semibold">
                                         <tool.icon size={14} />
                                         {tool.label}
                                     </Link>
@@ -231,7 +252,7 @@ export default function Header() {
                             </button>
                             <div className="absolute top-full right-0 hidden group-hover:block bg-white text-gray-800 shadow-2xl border border-gray-200 rounded-b-lg w-52 z-50 py-1">
                                 {CALCULATOR_ITEMS.map((calc) => (
-                                    <Link key={calc.label} href={calc.href} className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 hover:text-[#cc0000] text-xs font-semibold">
+                                    <Link key={calc.label} href={calc.href} prefetch={false} className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 hover:text-[#cc0000] text-xs font-semibold">
                                         <calc.icon size={14} />
                                         {calc.label}
                                     </Link>
@@ -240,48 +261,50 @@ export default function Header() {
                         </div>
                     </div>
                 </div>
+            </nav>
 
-                {/* Mobile Menu */}
-                {mobileOpen && (
-                    <div className="lg:hidden bg-[#b30000] px-4 py-3 space-y-1 border-t border-red-400 max-h-[80vh] overflow-y-auto">
-                        {NAVIGATION_CONFIG.map((item) => (
-                            <div key={item.label}>
-                                <div className="flex items-center justify-between border-b border-red-700 py-2">
-                                    <Link
-                                        href={item.href}
-                                        onClick={() => setMobileOpen(false)}
-                                        className="text-sm font-extrabold uppercase text-white"
+            {/* Mobile Menu */}
+            {mobileOpen && (
+                <div className="lg:hidden bg-[#b30000] px-4 py-3 space-y-1 border-t border-red-400 max-h-[80vh] overflow-y-auto shadow-2xl">
+                    {NAVIGATION_CONFIG.map((item) => (
+                        <div key={item.label}>
+                            <div className="flex items-center justify-between border-b border-red-700 py-2">
+                                <Link
+                                    href={item.href}
+                                    prefetch={false}
+                                    onClick={() => setMobileOpen(false)}
+                                    className="text-sm font-extrabold uppercase text-white tracking-wide"
+                                >
+                                    {item.label}
+                                </Link>
+                                {item.sub && (
+                                    <button
+                                        onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
+                                        className="p-1 text-white"
                                     >
-                                        {item.label}
-                                    </Link>
-                                    {item.sub && (
-                                        <button
-                                            onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
-                                            className="p-1 text-white"
-                                        >
-                                            <ChevronDown size={16} />
-                                        </button>
-                                    )}
-                                </div>
-                                {item.sub && openDropdown === item.label && (
-                                    <div className="bg-[#990000] rounded my-1 py-1 pl-4">
-                                        {item.sub.map((subItem) => (
-                                            <Link
-                                                key={subItem.label}
-                                                href={subItem.href}
-                                                onClick={() => setMobileOpen(false)}
-                                                className="block py-1.5 text-xs text-white hover:underline"
-                                            >
-                                                &bull; {subItem.label}
-                                            </Link>
-                                        ))}
-                                    </div>
+                                        <ChevronDown size={16} />
+                                    </button>
                                 )}
                             </div>
-                        ))}
-                    </div>
-                )}
-            </nav>
+                            {item.sub && openDropdown === item.label && (
+                                <div className="bg-[#990000] rounded my-1 py-1 pl-4">
+                                    {item.sub.map((subItem) => (
+                                        <Link
+                                            key={subItem.label}
+                                            href={subItem.href}
+                                            prefetch={false}
+                                            onClick={() => setMobileOpen(false)}
+                                            className="block py-1.5 text-xs text-white hover:underline"
+                                        >
+                                            &bull; {subItem.label}
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
         </header>
     );
 }
