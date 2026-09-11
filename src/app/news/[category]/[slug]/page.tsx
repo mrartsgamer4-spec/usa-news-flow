@@ -1,34 +1,19 @@
 export const runtime = 'edge';
 
 import { Metadata } from 'next';
-import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { siteConfig } from '@/lib/siteConfig';
-import { getArticleUrl, getCategoryUrl } from '@/lib/urls';
-import { Clock } from 'lucide-react';
+import { Clock, User, Calendar, Tag } from 'lucide-react';
 
-interface CategoryPageProps {
+interface ArticlePageProps {
     params: Promise<{
         category: string;
-    }>;
-    searchParams?: Promise<{
-        sub?: string;
+        slug: string;
     }>;
 }
 
-function timeAgo(dateString?: string): string {
-    if (!dateString) return 'Recently';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Recently';
-
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (seconds < 60) return 'Just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
-}
-
-async function getCategoryArticles(categorySlug: string, subCategory?: string) {
+async function getArticle(slug: string) {
     try {
         let db: any = null;
         try {
@@ -36,97 +21,105 @@ async function getCategoryArticles(categorySlug: string, subCategory?: string) {
             db = ctx?.env?.DB;
         } catch (e) { }
         if (!db) db = (process.env as any).DB;
-        if (!db) return [];
+        if (!db) return null;
 
-        const normalizedSlug = categorySlug.replace(/-/g, '%');
-        let query = 'SELECT * FROM articles WHERE LOWER(category) LIKE LOWER(?)';
-        const params: any[] = [`%${normalizedSlug}%`];
-
-        if (subCategory) {
-            const normalizedSub = subCategory.replace(/-/g, '%');
-            query += ' AND (LOWER(tags) LIKE LOWER(?) OR LOWER(title) LIKE LOWER(?))';
-            params.push(`%${normalizedSub}%`, `%${normalizedSub}%`);
-        }
-
-        query += ' ORDER BY created_at DESC LIMIT 50';
-
-        const stmt = db.prepare(query);
-        const { results } = await stmt.bind(...params).all();
-        return results || [];
+        const stmt = db.prepare('SELECT * FROM articles WHERE slug = ? LIMIT 1');
+        const article = await stmt.bind(slug).first();
+        return article || null;
     } catch (e) {
-        console.error('Error fetching category articles from D1:', e);
-        return [];
+        console.error('Error fetching single article from D1:', e);
+        return null;
     }
 }
 
-export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
     const resolvedParams = await params;
-    const categorySlug = resolvedParams?.category || '';
-    const title = categorySlug.replace(/-/g, ' ').toUpperCase();
+    const article: any = await getArticle(resolvedParams.slug);
+
+    if (!article) {
+        return {
+            title: `Article Not Found | ${siteConfig.name}`,
+        };
+    }
 
     return {
-        title: `${title} News | ${siteConfig.name}`,
-        description: `Latest news and updates in ${title}`,
-        alternates: {
-            canonical: `${siteConfig.url}${getCategoryUrl(categorySlug)}`,
+        title: `${article.title} | ${siteConfig.name}`,
+        description: article.excerpt || article.title,
+        openGraph: {
+            title: article.title,
+            description: article.excerpt || article.title,
+            images: article.featured_image ? [article.featured_image] : [],
         },
     };
 }
 
-export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+export default async function SingleArticlePage({ params }: ArticlePageProps) {
     const resolvedParams = await params;
-    const resolvedSearchParams = searchParams ? await searchParams : undefined;
+    const article: any = await getArticle(resolvedParams.slug);
 
-    const categorySlug = resolvedParams?.category || '';
-    const subCategory = resolvedSearchParams?.sub;
-    const articles = await getCategoryArticles(categorySlug, subCategory);
-    const categoryTitle = categorySlug.replace(/-/g, ' ');
+    if (!article) {
+        notFound();
+    }
 
     return (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-            <div className="border-b-2 border-gray-900 pb-3 flex items-baseline justify-between">
-                <h1 className="text-2xl sm:text-3xl font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
-                    <span className="w-2.5 h-7 bg-[#cc0000] inline-block rounded-sm"></span>
-                    {categoryTitle}
-                    {subCategory && <span className="text-gray-400 font-normal text-lg ml-2 capitalize">/ {subCategory.replace(/-/g, ' ')}</span>}
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+            <div className="space-y-3">
+                <span className="inline-block px-3 py-1 bg-red-100 text-[#cc0000] text-xs font-black uppercase rounded-full tracking-wider">
+                    {article.category}
+                </span>
+                <h1 className="text-2xl sm:text-4xl font-black text-gray-900 leading-tight">
+                    {article.title}
                 </h1>
-                <span className="text-xs font-bold text-gray-500 uppercase">{articles.length} Articles</span>
+
+                <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-500 pt-2 border-b border-gray-200 pb-4">
+                    <span className="flex items-center gap-1.5 text-gray-800 font-bold">
+                        <User size={14} className="text-[#cc0000]" />
+                        {article.author_name || article.reporter_name || 'Staff Reporter'}
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <Calendar size={14} />
+                        {new Date(article.published_at || article.created_at).toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric'
+                        })}
+                    </span>
+                </div>
             </div>
 
-            {articles.length === 0 ? (
-                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center my-6">
-                    <p className="text-gray-500 font-medium">No articles found in this category yet.</p>
+            {article.featured_image && (
+                <div className="w-full rounded-2xl overflow-hidden shadow-sm bg-gray-100 border border-gray-200">
+                    <img
+                        src={article.featured_image}
+                        alt={article.image_alt || article.title}
+                        className="w-full max-h-[480px] object-cover"
+                    />
+                    {article.image_alt && (
+                        <p className="p-2.5 text-xs text-gray-500 italic bg-gray-50 border-t border-gray-100 text-center">
+                            {article.image_alt}
+                        </p>
+                    )}
                 </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {articles.map((article: any) => (
-                        <Link
-                            key={article.id}
-                            href={getArticleUrl(article.category, article.slug)}
-                            className="group bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
-                        >
-                            {article.featured_image && (
-                                <div className="h-44 w-full overflow-hidden bg-gray-100">
-                                    <img
-                                        src={article.featured_image}
-                                        alt={article.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                                    />
-                                </div>
-                            )}
-                            <div className="p-4 flex flex-col flex-1">
-                                <span className="text-[11px] font-black text-[#cc0000] uppercase tracking-wider block mb-1">
-                                    {article.category}
-                                </span>
-                                <h2 className="font-bold text-sm sm:text-base text-gray-900 group-hover:text-[#cc0000] line-clamp-2 leading-snug mb-2">
-                                    {article.title}
-                                </h2>
-                                <div className="mt-auto pt-3 border-t border-gray-100 text-xs text-gray-400 flex items-center gap-1">
-                                    <Clock size={12} />
-                                    <span>{timeAgo(article.published_at || article.created_at)}</span>
-                                </div>
-                            </div>
-                        </Link>
+            )}
+
+            {article.excerpt && (
+                <p className="text-base sm:text-lg font-semibold text-gray-700 leading-relaxed italic border-l-4 border-[#cc0000] pl-4">
+                    {article.excerpt}
+                </p>
+            )}
+
+            <div
+                className="text-gray-800 leading-relaxed text-base sm:text-lg space-y-4 pt-2"
+                dangerouslySetInnerHTML={{ __html: article.content }}
+            />
+
+            {article.tags && (
+                <div className="pt-6 border-t border-gray-200 flex flex-wrap items-center gap-2">
+                    <Tag size={14} className="text-gray-400" />
+                    {article.tags.split(',').map((tag: string, idx: number) => (
+                        <span key={idx} className="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-md font-semibold">
+                            #{tag.trim()}
+                        </span>
                     ))}
                 </div>
             )}

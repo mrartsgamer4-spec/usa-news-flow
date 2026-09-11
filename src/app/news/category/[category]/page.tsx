@@ -38,16 +38,30 @@ async function getCategoryArticles(categorySlug: string, subCategory?: string) {
         if (!db) db = (process.env as any).DB;
         if (!db) return [];
 
-        const searchCat = categorySlug.replace(/-/g, '%');
-        let query = 'SELECT * FROM articles WHERE (LOWER(category) LIKE LOWER(?) OR LOWER(category) LIKE LOWER(?))';
-        const params: any[] = [`%${searchCat}%`, `%${categorySlug}%`];
+        const cleanCat = categorySlug.replace(/[-_.]/g, '%');
+
+        let query = `
+            SELECT * FROM articles 
+            WHERE (
+                REPLACE(REPLACE(LOWER(category), '.', ''), '-', ' ') LIKE LOWER(?) 
+                OR LOWER(category) LIKE LOWER(?)
+            )
+        `;
+        const params: any[] = [`%${cleanCat}%`, `%${cleanCat}%`];
 
         if (subCategory && subCategory.trim() !== '') {
-            const cleanSub = subCategory.replace(/-/g, ' ').trim();
-            const wildcardSub = `%${subCategory.replace(/-/g, '%')}%`;
-            // D1-এ sub_category কলাম নেই, তাই tags এবং title ফিল্ডে সাব-ক্যাটাগরি ম্যাচ করা হবে
-            query += ' AND (LOWER(tags) LIKE LOWER(?) OR LOWER(tags) LIKE LOWER(?) OR LOWER(title) LIKE LOWER(?))';
-            params.push(`%${cleanSub}%`, wildcardSub, `%${cleanSub}%`);
+            const cleanSub = subCategory.replace(/[-_]/g, ' ').trim();
+            const wildcardSub = `%${cleanSub.replace(/\s+/g, '%')}%`;
+
+            query += `
+                AND (
+                    (sub_category IS NOT NULL AND LOWER(sub_category) LIKE LOWER(?))
+                    OR (subcategory IS NOT NULL AND LOWER(subcategory) LIKE LOWER(?))
+                    OR (tags IS NOT NULL AND LOWER(tags) LIKE LOWER(?))
+                    OR (title IS NOT NULL AND LOWER(title) LIKE LOWER(?))
+                )
+            `;
+            params.push(wildcardSub, wildcardSub, wildcardSub, `%${cleanSub}%`);
         }
 
         query += ' ORDER BY created_at DESC LIMIT 50';
@@ -67,8 +81,8 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
     const categorySlug = resolvedParams?.category || '';
     const sub = resolvedSearchParams?.sub;
 
-    const baseTitle = categorySlug.replace(/-/g, ' ').toUpperCase();
-    const title = sub ? `${sub.replace(/-/g, ' ').toUpperCase()} - ${baseTitle}` : baseTitle;
+    const baseTitle = categorySlug.replace(/[-_]/g, ' ').toUpperCase();
+    const title = sub ? `${sub.replace(/[-_]/g, ' ').toUpperCase()} - ${baseTitle}` : baseTitle;
 
     return {
         title: `${title} News | ${siteConfig.name}`,
@@ -86,8 +100,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     const categorySlug = resolvedParams?.category || '';
     const subCategory = resolvedSearchParams?.sub;
     const articles = await getCategoryArticles(categorySlug, subCategory);
-    const categoryTitle = categorySlug.replace(/-/g, ' ');
-    const displaySubTitle = subCategory ? subCategory.replace(/-/g, ' ') : null;
+    const categoryTitle = categorySlug.replace(/[-_]/g, ' ');
+    const displaySubTitle = subCategory ? subCategory.replace(/[-_]/g, ' ') : null;
 
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -129,6 +143,11 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                             <div className="p-4 flex flex-col flex-1">
                                 <span className="text-[11px] font-black text-[#cc0000] uppercase tracking-wider block mb-1">
                                     {article.category}
+                                    {(article.sub_category || article.subcategory) && (
+                                        <span className="text-gray-400 font-bold ml-1.5">
+                                            • {article.sub_category || article.subcategory}
+                                        </span>
+                                    )}
                                 </span>
                                 <h2 className="font-bold text-sm sm:text-base text-gray-900 group-hover:text-[#cc0000] line-clamp-2 leading-snug mb-2">
                                     {article.title}
@@ -140,7 +159,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                                     </span>
                                     <span className="flex items-center gap-1">
                                         <Clock size={11} />
-                                        {timeAgo(article.created_at)}
+                                        {timeAgo(article.published_at || article.created_at)}
                                     </span>
                                 </div>
                             </div>
