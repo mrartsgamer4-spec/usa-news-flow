@@ -1,46 +1,57 @@
-export const runtime = 'edge'; 
 import { MetadataRoute } from 'next';
 import { siteConfig } from '@/lib/siteConfig';
-import { Article } from '@/types/article';
-import { getArticleUrl } from '@/lib/urls';
+import { getPublishedArticles } from '@/lib/newsService';
+import { getArticleUrl, getCategoryUrl } from '@/lib/urls';
 
-async function fetchAllArticles(): Promise<Article[]> {
-    try {
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
-        const res = await fetch(`${baseUrl}/api/news?limit=100`, { cache: 'no-store' });
-        if (res.ok) {
-            const data = await res.json();
-            return Array.isArray(data) ? data : (data.articles || []);
-        }
-    } catch (e) {
-        console.error('Failed to fetch articles for main sitemap', e);
-    }
-    return [];
-}
+export const runtime = 'edge';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const articles = await fetchAllArticles();
+    const baseUrl = siteConfig.url.replace(/\/+$/, '');
+    const articles = (await getPublishedArticles()) || [];
 
-    const articleEntries: MetadataRoute.Sitemap = articles.map((article) => {
-        const catName = typeof article.category === 'string' ? article.category : article.category?.name || 'news';
-        const url = article.canonical_url || `${siteConfig.url}${getArticleUrl(catName, article.slug)}`;
-        const lastModified = article.updated_at || article.updatedAt || article.published_at || article.publishedAt || new Date();
+    const staticRoutes: MetadataRoute.Sitemap = [
+        '',
+        '/about-us',
+        '/contact',
+        '/privacy-policy',
+        '/terms-of-use',
+        '/editorial-policy',
+        '/corrections-policy',
+        '/advertising-policy',
+        '/calculators',
+        '/calculators/mortgage',
+        '/calculators/loan',
+        '/calculators/salary',
+        '/calculators/tax',
+        '/calculators/percentage',
+        '/tools/image-to-pdf',
+        '/tools/pdf-to-image',
+        '/tools/qr-code',
+        '/tools/word-to-pdf',
+    ].map((route) => ({
+        url: `${baseUrl}${route}`,
+        lastModified: new Date(),
+        changeFrequency: route === '' ? 'always' : 'weekly',
+        priority: route === '' ? 1.0 : 0.6,
+    }));
 
+    const categories = ['politics', 'us-news', 'world', 'business', 'technology', 'health', 'sports', 'entertainment', 'opinion'];
+    const categoryRoutes: MetadataRoute.Sitemap = categories.map((cat) => ({
+        url: `${baseUrl}${getCategoryUrl(cat)}`,
+        lastModified: new Date(),
+        changeFrequency: 'hourly',
+        priority: 0.8,
+    }));
+
+    const articleRoutes: MetadataRoute.Sitemap = articles.map((article: any) => {
+        const relativeUrl = getArticleUrl(article.category, article.slug);
         return {
-            url,
-            lastModified: new Date(lastModified),
+            url: `${baseUrl}${relativeUrl}`,
+            lastModified: new Date(article.updated_at || article.published_at || Date.now()),
             changeFrequency: 'daily',
-            priority: 0.8,
+            priority: 0.7,
         };
     });
 
-    return [
-        {
-            url: siteConfig.url,
-            lastModified: new Date(),
-            changeFrequency: 'always',
-            priority: 1.0,
-        },
-        ...articleEntries,
-    ];
+    return [...staticRoutes, ...categoryRoutes, ...articleRoutes];
 }

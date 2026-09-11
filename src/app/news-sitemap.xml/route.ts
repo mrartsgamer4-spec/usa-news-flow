@@ -1,56 +1,72 @@
 export const runtime = 'edge';
 
+import { NextResponse } from 'next/server';
+import { getRequestContext } from '@cloudflare/next-on-pages';
 import { siteConfig } from '@/lib/siteConfig';
-import { Article } from '@/types/article';
 import { getArticleUrl } from '@/lib/urls';
 
-async function fetchLatestNews(): Promise<Article[]> {
-    try {
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url;
-        const res = await fetch(`${baseUrl}/api/news?limit=50`, { cache: 'no-store' });
-        if (res.ok) {
-            const data = await res.json();
-            return Array.isArray(data) ? data : (data.articles || []);
-        }
-    } catch (e) {
-        console.error('Failed to fetch news for sitemap', e);
-    }
-    return [];
-}
-
 export async function GET() {
-    const articles = await fetchLatestNews();
+    try {
+        let db: any = null;
+        try {
+            const ctx = getRequestContext();
+            db = ctx?.env?.DB;
+        } catch (e) { }
+        if (!db) db = (process.env as any).DB;
 
-    const xmlItems = articles.map((article) => {
-        const catName = typeof article.category === 'string' ? article.category : article.category?.name || 'news';
-        const loc = article.canonical_url || `${siteConfig.url}${getArticleUrl(catName, article.slug)}`;
-        const pubDate = article.published_at || article.publishedAt || new Date().toISOString();
+        const baseUrl = siteConfig.url.replace(/\/+$/, '');
+        let articles: any[] = [];
 
-        return `
-      <url>
-        <loc>${loc}</loc>
-        <news:news>
-          <news:publication>
-            <news:name>${siteConfig.name}</news:name>
-            <news:language>en</news:language>
-          </news:publication>
-          <news:publication_date>${new Date(pubDate).toISOString()}</news:publication_date>
-          <news:title>${article.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</news:title>
-        </news:news>
-      </url>
-    `;
-    }).join('');
+        if (db) {
+            // গুগলের নিয়ম অনুযায়ী ঠিক গত ৪৮ ঘণ্টার (২ দিন) আর্টিকেল ফিল্টার করা
+            const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+            const { results } = await db
+                .prepare('SELECT * FROM articles WHERE created_at >= ? ORDER BY created_at DESC LIMIT 1000')
+                .bind(twoDaysAgo)
+                .all();
+            articles = results || [];
+        }
 
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
-    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-            xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-      ${xmlItems}
-    </urlset>`;
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+${articles
+                .map((item) => {
+                    const url = `${baseUrl}${getArticleUrl(item.category, item.slug)}`;
+                    const pubDate = new Date(item.published_at || item.created_at || Date.now()).toISOString();
+                    const safeTitle = (item.title || '').replace(/[<>&'"]/g, (c: string) => {
+                        switch (c) {
+                            case '<': return '&lt;';
+                            case '>': return '&gt;';
+                            case '&': return '&amp;';
+                            case '\'': return '&apos;';
+                            case '"': return '&quot;';
+                            default: return c;
+                        }
+                    });
 
-    return new Response(xml, {
-        headers: {
-            'Content-Type': 'application/xml',
-            'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=59',
-        },
-    });
+                    return `  <url>
+    <loc>${url}</loc>
+    <news:news>
+      <news:publication>
+        <news:name>${siteConfig.name}</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>${pubDate}</news:publication_date>
+      <news:title>${safeTitle}</news:title>
+    </news:news>
+  </url>`;
+                })
+                .join('\n')}
+</urlset>`;
+
+        return new NextResponse(xml, {
+            headers: {
+                'Content-Type': 'application/xml; charset=utf-8',
+                'Cache-Control': 'public, max-age=600, s-maxage=600',
+            },
+        });
+    } catch (e: any) {
+        return new NextResponse(`<error>${e.message}</error>`, { status: 500 });
+    }
 }
