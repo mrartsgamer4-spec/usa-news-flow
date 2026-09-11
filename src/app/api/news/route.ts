@@ -3,22 +3,22 @@ export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 
+function getDb() {
+    let db: any = null;
+    try {
+        const ctx = getRequestContext();
+        db = ctx?.env?.DB;
+    } catch (e) { }
+    if (!db) db = (process.env as any).DB;
+    return db;
+}
+
 export async function GET(req: NextRequest) {
     try {
-        let db: any = null;
-        try {
-            const ctx = getRequestContext();
-            db = ctx?.env?.DB;
-        } catch (e) { }
-        if (!db) db = (process.env as any).DB;
-
-        if (!db) {
-            return NextResponse.json({ success: false, error: 'Database unavailable' }, { status: 500 });
-        }
+        const db = getDb();
+        if (!db) return NextResponse.json({ success: false, error: 'Database unavailable' }, { status: 500 });
 
         const { searchParams } = new URL(req.url);
-        const category = searchParams.get('category');
-        const sub = searchParams.get('sub');
         const slug = searchParams.get('slug');
 
         if (slug) {
@@ -29,25 +29,9 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: true, article });
         }
 
-        let query = 'SELECT * FROM articles WHERE 1=1';
-        const bindings: any[] = [];
-
-        if (category && category !== 'all') {
-            const cleanCat = category.replace(/-/g, ' ');
-            query += ' AND (LOWER(category) LIKE LOWER(?) OR LOWER(category) LIKE LOWER(?))';
-            bindings.push(`%${category}%`, `%${cleanCat}%`);
-        }
-
-        if (sub && sub !== 'all') {
-            const cleanSub = sub.replace(/-/g, ' ');
-            query += ' AND (LOWER(sub_category) LIKE LOWER(?) OR LOWER(tags) LIKE LOWER(?) OR LOWER(sub_category) LIKE LOWER(?))';
-            bindings.push(`%${sub}%`, `%${sub}%`, `%${cleanSub}%`);
-        }
-
-        query += ' ORDER BY created_at DESC LIMIT 100';
-
-        const stmt = db.prepare(query);
-        const { results } = await stmt.bind(...bindings).all();
+        const { results } = await db
+            .prepare('SELECT * FROM articles ORDER BY created_at DESC LIMIT 100')
+            .all();
 
         return NextResponse.json({ success: true, articles: results || [] });
     } catch (error: any) {
@@ -57,16 +41,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
-        let db: any = null;
-        try {
-            const ctx = getRequestContext();
-            db = ctx?.env?.DB;
-        } catch (e) { }
-        if (!db) db = (process.env as any).DB;
-
-        if (!db) {
-            return NextResponse.json({ success: false, error: 'Database unavailable' }, { status: 500 });
-        }
+        const db = getDb();
+        if (!db) return NextResponse.json({ success: false, error: 'Database unavailable' }, { status: 500 });
 
         const body = await req.json();
         const {
@@ -89,13 +65,22 @@ export async function POST(req: NextRequest) {
         }
 
         const finalAuthor = reporter_name || author_name || 'Editorial Staff';
-        const finalSlug = (slug || title)
+
+        let finalSlug = (slug || title)
             .toString()
             .toLowerCase()
             .trim()
             .replace(/[^\w\s-]/g, '')
             .replace(/[\s_-]+/g, '-')
-            .replace(/^-+|-+$/g, '') || `news-${Date.now()}`;
+            .replace(/^-+|-+$/g, '');
+
+        if (!finalSlug) finalSlug = `news-${Date.now()}`;
+
+        // sub_category আলাদা কলাম না থাকায় এটি tags ফিল্ডে ট্যাগ হিসেবে সংযুক্ত হবে
+        let finalTags = tags ? tags.trim() : '';
+        if (sub_category && sub_category.trim()) {
+            finalTags = finalTags ? `${sub_category}, ${finalTags}` : sub_category;
+        }
 
         const articleId = crypto.randomUUID();
         const now = new Date().toISOString();
@@ -103,10 +88,10 @@ export async function POST(req: NextRequest) {
         await db
             .prepare(`
                 INSERT INTO articles (
-                    id, title, slug, excerpt, content, category, sub_category,
+                    id, title, slug, excerpt, content, category,
                     author_name, featured_image, image_alt, tags, status,
                     views, created_at, updated_at, published_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
             `)
             .bind(
                 articleId,
@@ -115,11 +100,10 @@ export async function POST(req: NextRequest) {
                 excerpt || '',
                 content,
                 category || 'U.S. News',
-                sub_category || '',
                 finalAuthor,
                 featured_image || '',
                 image_alt || title,
-                tags || '',
+                finalTags,
                 status || 'published',
                 now,
                 now,
@@ -128,6 +112,85 @@ export async function POST(req: NextRequest) {
             .run();
 
         return NextResponse.json({ success: true, id: articleId, slug: finalSlug });
+    } catch (error: any) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+}
+
+export async function PUT(req: NextRequest) {
+    try {
+        const db = getDb();
+        if (!db) return NextResponse.json({ success: false, error: 'Database unavailable' }, { status: 500 });
+
+        const body = await req.json();
+        const {
+            id,
+            title,
+            slug,
+            excerpt,
+            content,
+            category,
+            sub_category,
+            reporter_name,
+            featured_image,
+            image_alt,
+            tags
+        } = body;
+
+        if (!id || !title) {
+            return NextResponse.json({ success: false, error: 'Article ID and Title are required' }, { status: 400 });
+        }
+
+        let finalTags = tags ? tags.trim() : '';
+        if (sub_category && sub_category.trim()) {
+            finalTags = finalTags ? `${sub_category}, ${finalTags}` : sub_category;
+        }
+
+        const now = new Date().toISOString();
+
+        await db
+            .prepare(`
+                UPDATE articles SET 
+                    title = ?, slug = ?, excerpt = ?, content = ?, 
+                    category = ?, author_name = ?, featured_image = ?, 
+                    image_alt = ?, tags = ?, updated_at = ?
+                WHERE id = ?
+            `)
+            .bind(
+                title,
+                slug,
+                excerpt || '',
+                content,
+                category,
+                reporter_name || 'Editorial Staff',
+                featured_image || '',
+                image_alt || title,
+                finalTags,
+                now,
+                id
+            )
+            .run();
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: NextRequest) {
+    try {
+        const db = getDb();
+        if (!db) return NextResponse.json({ success: false, error: 'Database unavailable' }, { status: 500 });
+
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json({ success: false, error: 'Article ID required' }, { status: 400 });
+        }
+
+        await db.prepare('DELETE FROM articles WHERE id = ?').bind(id).run();
+        return NextResponse.json({ success: true });
     } catch (error: any) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }

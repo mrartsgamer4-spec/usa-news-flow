@@ -6,7 +6,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
     PlusCircle, ExternalLink,
-    RefreshCw, CheckCircle, AlertCircle, Eye
+    RefreshCw, CheckCircle, AlertCircle, Eye,
+    Edit, Trash2, XCircle
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -15,6 +16,10 @@ export default function AdminDashboard() {
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+    // এডিট আইডি স্টেট
+    const [editingId, setEditingId] = useState<string | null>(null);
+
+    // ফর্ম স্টেট
     const [title, setTitle] = useState('');
     const [slug, setSlug] = useState('');
     const [category, setCategory] = useState('U.S. News');
@@ -38,6 +43,20 @@ export default function AdminDashboard() {
         { name: 'Opinion', subs: [] }
     ];
 
+    // টাইটেল লেখার সাথে সাথে অটো স্লাগ তৈরি
+    const handleTitleChange = (val: string) => {
+        setTitle(val);
+        if (!editingId) {
+            const autoSlug = val
+                .toLowerCase()
+                .trim()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/[\s_-]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            setSlug(autoSlug);
+        }
+    };
+
     const fetchArticles = async () => {
         setLoading(true);
         try {
@@ -57,6 +76,50 @@ export default function AdminDashboard() {
         fetchArticles();
     }, []);
 
+    const resetForm = () => {
+        setEditingId(null);
+        setTitle('');
+        setSlug('');
+        setReporterName('');
+        setFeaturedImage('');
+        setImageAlt('');
+        setExcerpt('');
+        setContent('');
+        setTags('');
+        setSubCategory('');
+    };
+
+    const handleEdit = (article: any) => {
+        setEditingId(article.id);
+        setTitle(article.title || '');
+        setSlug(article.slug || '');
+        setCategory(article.category || 'U.S. News');
+        setReporterName(article.author_name || '');
+        setFeaturedImage(article.featured_image || '');
+        setImageAlt(article.image_alt || '');
+        setExcerpt(article.excerpt || '');
+        setContent(article.content || '');
+        setTags(article.tags || '');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this news article?')) return;
+
+        try {
+            const res = await fetch(`/api/news?id=${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                setMessage({ type: 'success', text: 'Article deleted successfully!' });
+                fetchArticles();
+            } else {
+                setMessage({ type: 'error', text: data.error || 'Failed to delete.' });
+            }
+        } catch (e) {
+            setMessage({ type: 'error', text: 'Server error while deleting.' });
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!title.trim() || !content.trim()) {
@@ -67,40 +130,39 @@ export default function AdminDashboard() {
         setSubmitting(true);
         setMessage(null);
 
+        const payload = {
+            id: editingId,
+            title,
+            slug,
+            category,
+            sub_category: subCategory,
+            reporter_name: reporterName,
+            featured_image: featuredImage,
+            image_alt: imageAlt || title,
+            excerpt,
+            content,
+            tags,
+            status: 'published'
+        };
+
         try {
             const res = await fetch('/api/news', {
-                method: 'POST',
+                method: editingId ? 'PUT' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title,
-                    slug,
-                    category,
-                    sub_category: subCategory,
-                    reporter_name: reporterName,
-                    featured_image: featuredImage,
-                    image_alt: imageAlt || title,
-                    excerpt,
-                    content,
-                    tags,
-                    status: 'published'
-                })
+                body: JSON.stringify(payload)
             });
 
             const data = await res.json();
 
             if (data.success) {
-                setMessage({ type: 'success', text: 'Article published successfully!' });
-                setTitle('');
-                setSlug('');
-                setReporterName('');
-                setFeaturedImage('');
-                setImageAlt('');
-                setExcerpt('');
-                setContent('');
-                setTags('');
+                setMessage({
+                    type: 'success',
+                    text: editingId ? 'Article updated successfully!' : 'Article published successfully!'
+                });
+                resetForm();
                 fetchArticles();
             } else {
-                setMessage({ type: 'error', text: data.error || 'Failed to publish article.' });
+                setMessage({ type: 'error', text: data.error || 'Failed to save article.' });
             }
         } catch (err: any) {
             setMessage({ type: 'error', text: 'Server error occurred.' });
@@ -115,13 +177,14 @@ export default function AdminDashboard() {
         <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto space-y-8">
 
+                {/* Header */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
                             <span className="w-3 h-7 bg-[#cc0000] inline-block rounded-sm"></span>
                             USA News Flow Editorial Dashboard
                         </h1>
-                        <p className="text-xs text-gray-500 font-semibold mt-1">Publish news, assign reporters, and manage article categories.</p>
+                        <p className="text-xs text-gray-500 font-semibold mt-1">Publish news, assign reporters, manage SEO and edit live articles.</p>
                     </div>
                     <Link
                         href="/"
@@ -132,10 +195,22 @@ export default function AdminDashboard() {
                     </Link>
                 </div>
 
+                {/* Publish & Edit News Form */}
                 <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
-                    <h2 className="text-lg font-black text-gray-900 mb-6 uppercase flex items-center gap-2 border-b pb-3">
-                        <PlusCircle size={20} className="text-[#cc0000]" /> Publish New Article
-                    </h2>
+                    <div className="flex items-center justify-between mb-6 border-b pb-3">
+                        <h2 className="text-lg font-black text-gray-900 uppercase flex items-center gap-2">
+                            {editingId ? <Edit size={20} className="text-[#cc0000]" /> : <PlusCircle size={20} className="text-[#cc0000]" />}
+                            {editingId ? 'Edit Article' : 'Publish New Article'}
+                        </h2>
+                        {editingId && (
+                            <button
+                                onClick={resetForm}
+                                className="text-xs font-bold text-gray-500 hover:text-red-600 flex items-center gap-1"
+                            >
+                                <XCircle size={15} /> Cancel Edit
+                            </button>
+                        )}
+                    </div>
 
                     {message && (
                         <div className={`p-4 mb-6 rounded-xl flex items-center gap-2 text-sm font-bold ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
@@ -153,20 +228,20 @@ export default function AdminDashboard() {
                                     type="text"
                                     required
                                     value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    placeholder="Enter news title..."
+                                    onChange={(e) => handleTitleChange(e.target.value)}
+                                    placeholder="Enter headline..."
                                     className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Custom Slug (Optional)</label>
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">URL Slug (Auto Generated)</label>
                                 <input
                                     type="text"
                                     value={slug}
                                     onChange={(e) => setSlug(e.target.value)}
-                                    placeholder="e.g. us-house-passes-bill"
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
+                                    placeholder="auto-generated-slug"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none font-mono text-gray-600"
                                 />
                             </div>
 
@@ -212,24 +287,35 @@ export default function AdminDashboard() {
                                 </select>
                             </div>
 
-                            <div className="md:col-span-2">
+                            <div>
                                 <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Featured Image URL</label>
                                 <input
                                     type="text"
                                     value={featuredImage}
                                     onChange={(e) => setFeaturedImage(e.target.value)}
-                                    placeholder="https://example.com/image.jpg"
+                                    placeholder="https://images.unsplash.com/..."
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Image Caption / Source (SEO Alt)</label>
+                                <input
+                                    type="text"
+                                    value={imageAlt}
+                                    onChange={(e) => setImageAlt(e.target.value)}
+                                    placeholder="e.g. Photo: Reuters / John Smith"
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
                                 />
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Short Excerpt</label>
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Short Excerpt (SEO Meta Description)</label>
                                 <textarea
                                     rows={2}
                                     value={excerpt}
                                     onChange={(e) => setExcerpt(e.target.value)}
-                                    placeholder="Brief 1-2 sentence overview..."
+                                    placeholder="Brief 1-2 sentence synopsis for SEO..."
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
                                 />
                             </div>
@@ -241,18 +327,18 @@ export default function AdminDashboard() {
                                     required
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
-                                    placeholder="Type or paste the full news article here..."
+                                    placeholder="Write or paste full article body here..."
                                     className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
                                 />
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Tags (Comma-separated)</label>
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Tags (Comma-separated for SEO)</label>
                                 <input
                                     type="text"
                                     value={tags}
                                     onChange={(e) => setTags(e.target.value)}
-                                    placeholder="e.g. trump, whitehouse, breaking"
+                                    placeholder="e.g. trump, whitehouse, economy, breaking"
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
                                 />
                             </div>
@@ -263,11 +349,12 @@ export default function AdminDashboard() {
                             disabled={submitting}
                             className="w-full py-3.5 bg-[#cc0000] text-white font-extrabold uppercase rounded-xl hover:bg-[#b30000] transition shadow-md disabled:bg-gray-400"
                         >
-                            {submitting ? 'Publishing News...' : 'Publish News'}
+                            {submitting ? 'Processing...' : (editingId ? 'Update Article' : 'Publish News')}
                         </button>
                     </form>
                 </div>
 
+                {/* Published Articles List with Edit and Delete Buttons */}
                 <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
                     <div className="flex items-center justify-between mb-6 border-b pb-3">
                         <h2 className="text-lg font-black text-gray-900 uppercase">
@@ -289,36 +376,49 @@ export default function AdminDashboard() {
                     ) : (
                         <div className="divide-y divide-gray-100">
                             {articles.map((item) => (
-                                <div key={item.id} className="py-4 flex flex-wrap items-center justify-between gap-3">
+                                <div key={item.id} className="py-4 flex flex-wrap items-center justify-between gap-4 hover:bg-gray-50 px-3 rounded-xl transition">
                                     <div className="flex-1 min-w-[280px]">
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="text-[10px] font-black text-[#cc0000] uppercase bg-red-50 px-2 py-0.5 rounded">
                                                 {item.category}
                                             </span>
-                                            {item.sub_category && (
-                                                <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                                                    {item.sub_category}
-                                                </span>
-                                            )}
                                         </div>
                                         <h3 className="font-bold text-sm sm:text-base text-gray-900 leading-snug">
                                             {item.title}
                                         </h3>
-                                        <div className="text-xs text-gray-400 mt-1 flex gap-4">
-                                            <span>Author: <strong className="text-gray-700">{item.author_name || item.reporter_name || 'N/A'}</strong></span>
+                                        <div className="text-xs text-gray-400 mt-1 flex flex-wrap gap-4">
+                                            <span>Author: <strong className="text-gray-700">{item.author_name || 'N/A'}</strong></span>
                                             <span>Date: {new Date(item.created_at || Date.now()).toLocaleDateString()}</span>
+                                            {item.tags && <span>Tags: <em>{item.tags}</em></span>}
                                         </div>
                                     </div>
 
+                                    {/* Action Buttons: View, Edit, Delete */}
                                     <div className="flex items-center gap-2">
                                         <Link
                                             href={`/news/article/${item.slug}`}
                                             target="_blank"
-                                            className="p-2 text-gray-600 hover:text-[#cc0000] border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                            className="p-2 text-blue-600 hover:text-blue-800 border border-blue-100 rounded-lg hover:bg-blue-50 transition"
                                             title="View Post"
                                         >
                                             <Eye size={16} />
                                         </Link>
+
+                                        <button
+                                            onClick={() => handleEdit(item)}
+                                            className="p-2 text-emerald-600 hover:text-emerald-800 border border-emerald-100 rounded-lg hover:bg-emerald-50 transition"
+                                            title="Edit News"
+                                        >
+                                            <Edit size={16} />
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleDelete(item.id)}
+                                            className="p-2 text-red-600 hover:text-red-800 border border-red-100 rounded-lg hover:bg-red-50 transition"
+                                            title="Delete News"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
                                     </div>
                                 </div>
                             ))}
