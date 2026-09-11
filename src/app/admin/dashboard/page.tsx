@@ -1,12 +1,12 @@
-export const runtime = 'edge';
-
 'use client';
+
+export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-    PlusCircle, Trash2, Edit3, ExternalLink,
-    RefreshCw, CheckCircle, AlertCircle, Eye, LogOut
+    PlusCircle, ExternalLink,
+    RefreshCw, CheckCircle, AlertCircle, Eye
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -15,7 +15,6 @@ export default function AdminDashboard() {
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-    // ফর্ম স্টেট
     const [title, setTitle] = useState('');
     const [slug, setSlug] = useState('');
     const [category, setCategory] = useState('U.S. News');
@@ -116,7 +115,6 @@ export default function AdminDashboard() {
         <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto space-y-8">
 
-                {/* Header */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
@@ -134,7 +132,6 @@ export default function AdminDashboard() {
                     </Link>
                 </div>
 
-                {/* Publish News Form */}
                 <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
                     <h2 className="text-lg font-black text-gray-900 mb-6 uppercase flex items-center gap-2 border-b pb-3">
                         <PlusCircle size={20} className="text-[#cc0000]" /> Publish New Article
@@ -271,7 +268,6 @@ export default function AdminDashboard() {
                     </form>
                 </div>
 
-                {/* Published Articles List */}
                 <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
                     <div className="flex items-center justify-between mb-6 border-b pb-3">
                         <h2 className="text-lg font-black text-gray-900 uppercase">
