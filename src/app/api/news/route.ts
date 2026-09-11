@@ -13,6 +13,30 @@ function getDb() {
     return db;
 }
 
+// পরিচিত সাব-ক্যাটাগরি তালিকা (ট্যাগ থেকে স্বয়ংক্রিয়ভাবে শনাক্ত করার জন্য)
+const KNOWN_SUBS = [
+    'Congress', 'Elections', 'Policy & Law',
+    'Donald Trump', 'White House News', 'Breaking News',
+    'Global Affairs', 'Europe', 'Asia-Pacific', 'Middle East',
+    'Economy', 'Markets', 'Finance', 'Real Estate',
+    'AI News', 'Latest AI News', 'AI Technology',
+    'Medicine', 'Wellness', 'Research',
+    'NFL & Football', 'NBA & Basketball', 'Cricket'
+];
+
+function extractSubCategory(tags?: string): string {
+    if (!tags) return '';
+    const tagList = tags.split(',').map(t => t.trim().toLowerCase());
+    for (const sub of KNOWN_SUBS) {
+        const subLower = sub.toLowerCase();
+        const subSlug = subLower.replace(/[\s_]+/g, '-');
+        if (tagList.includes(subLower) || tagList.includes(subSlug)) {
+            return sub;
+        }
+    }
+    return '';
+}
+
 export async function GET(req: NextRequest) {
     try {
         const db = getDb();
@@ -22,10 +46,15 @@ export async function GET(req: NextRequest) {
         const slug = searchParams.get('slug');
 
         if (slug) {
-            const article = await db
+            const article: any = await db
                 .prepare('SELECT * FROM articles WHERE slug = ? LIMIT 1')
                 .bind(slug)
                 .first();
+
+            if (article) {
+                article.sub_category = extractSubCategory(article.tags);
+                article.subcategory = article.sub_category;
+            }
             return NextResponse.json({ success: true, article });
         }
 
@@ -33,7 +62,16 @@ export async function GET(req: NextRequest) {
             .prepare('SELECT * FROM articles ORDER BY created_at DESC LIMIT 100')
             .all();
 
-        return NextResponse.json({ success: true, articles: results || [] });
+        const formattedResults = (results || []).map((art: any) => {
+            const detectedSub = extractSubCategory(art.tags);
+            return {
+                ...art,
+                sub_category: detectedSub,
+                subcategory: detectedSub
+            };
+        });
+
+        return NextResponse.json({ success: true, articles: formattedResults });
     } catch (error: any) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
@@ -76,12 +114,16 @@ export async function POST(req: NextRequest) {
 
         if (!finalSlug) finalSlug = `news-${Date.now()}`;
 
-        // সাব-ক্যাটাগরি থাকলে সেটির নাম ও স্লাগ উভয়ই tags-এ সেভ করা যাতে ফিল্টারিং কাজ করে
-        let finalTags = tags ? tags.trim() : '';
+        // পরিষ্কার ট্যাগ ফরম্যাটিং
+        let tagArray = tags ? tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
         if (sub_category && sub_category.trim()) {
-            const subSlug = sub_category.toLowerCase().replace(/[\s_]+/g, '-');
-            finalTags = `${sub_category}, ${subSlug}${finalTags ? `, ${finalTags}` : ''}`;
+            const cleanSub = sub_category.trim();
+            const subSlug = cleanSub.toLowerCase().replace(/[\s_]+/g, '-');
+            // ডুপ্লিকেট এড়াতে ফিল্টার করে শুরুতে যুক্ত করা
+            tagArray = tagArray.filter((t: string) => t.toLowerCase() !== cleanSub.toLowerCase() && t.toLowerCase() !== subSlug);
+            tagArray.unshift(cleanSub, subSlug);
         }
+        const finalTags = tagArray.join(', ');
 
         const articleId = crypto.randomUUID();
         const now = new Date().toISOString();
@@ -133,6 +175,7 @@ export async function PUT(req: NextRequest) {
             category,
             sub_category,
             reporter_name,
+            author_name,
             featured_image,
             image_alt,
             tags
@@ -142,11 +185,21 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'Article ID and Title are required' }, { status: 400 });
         }
 
-        let finalTags = tags ? tags.trim() : '';
+        // এডিটের সময় ট্যাগগুলো থেকে পুরনো সাব-ক্যাটাগরি পরিষ্কার করে নতুনটি সেট করা
+        let tagArray = tags ? tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
+
+        // সব সম্ভাব্য সাব-ক্যাটাগরি ট্যাগ আগে রিমুভ করা
+        tagArray = tagArray.filter((t: string) => {
+            const lower = t.toLowerCase();
+            return !KNOWN_SUBS.some(sub => sub.toLowerCase() === lower || sub.toLowerCase().replace(/[\s_]+/g, '-') === lower);
+        });
+
         if (sub_category && sub_category.trim()) {
-            const subSlug = sub_category.toLowerCase().replace(/[\s_]+/g, '-');
-            finalTags = `${sub_category}, ${subSlug}${finalTags ? `, ${finalTags}` : ''}`;
+            const cleanSub = sub_category.trim();
+            const subSlug = cleanSub.toLowerCase().replace(/[\s_]+/g, '-');
+            tagArray.unshift(cleanSub, subSlug);
         }
+        const finalTags = tagArray.join(', ');
 
         const now = new Date().toISOString();
 
@@ -164,7 +217,7 @@ export async function PUT(req: NextRequest) {
                 excerpt || '',
                 content,
                 category,
-                reporter_name || 'Editorial Staff',
+                reporter_name || author_name || 'Editorial Staff',
                 featured_image || '',
                 image_alt || title,
                 finalTags,
