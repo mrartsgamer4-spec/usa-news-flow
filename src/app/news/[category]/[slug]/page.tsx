@@ -1,125 +1,134 @@
 export const runtime = 'edge';
 
-import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { getRequestContext } from '@cloudflare/next-on-pages';
-import { Clock, User, ArrowLeft, Tag } from 'lucide-react';
+import { siteConfig } from '@/lib/siteConfig';
+import { getArticleUrl, getCategoryUrl } from '@/lib/urls';
+import { Clock } from 'lucide-react';
 
-interface ArticlePageProps {
+interface CategoryPageProps {
     params: Promise<{
         category: string;
-        slug: string;
+    }>;
+    searchParams?: Promise<{
+        sub?: string;
     }>;
 }
 
-async function fetchArticle(slug: string) {
+function timeAgo(dateString?: string): string {
+    if (!dateString) return 'Recently';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Recently';
+
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+async function getCategoryArticles(categorySlug: string, subCategory?: string) {
     try {
         let db: any = null;
         try {
             const ctx = getRequestContext();
             db = ctx?.env?.DB;
         } catch (e) { }
+        if (!db) db = (process.env as any).DB;
+        if (!db) return [];
 
-        if (!db) {
-            db = (process.env as any).DB;
+        const normalizedSlug = categorySlug.replace(/-/g, '%');
+        let query = 'SELECT * FROM articles WHERE LOWER(category) LIKE LOWER(?)';
+        const params: any[] = [`%${normalizedSlug}%`];
+
+        if (subCategory) {
+            const normalizedSub = subCategory.replace(/-/g, '%');
+            query += ' AND (LOWER(tags) LIKE LOWER(?) OR LOWER(title) LIKE LOWER(?))';
+            params.push(`%${normalizedSub}%`, `%${normalizedSub}%`);
         }
 
-        if (!db) return null;
+        query += ' ORDER BY created_at DESC LIMIT 50';
 
-        // এনকোডেড ও ডিকোডেড উভয় ফরম্যাটেই স্লগ প্রস্তুত করা
-        const rawSlug = slug.trim();
-        const decodedSlug = decodeURIComponent(slug).trim();
-
-        const article = await db
-            .prepare('SELECT * FROM articles WHERE slug = ? OR slug = ? OR LOWER(slug) = LOWER(?) LIMIT 1')
-            .bind(rawSlug, decodedSlug, decodedSlug)
-            .first();
-
-        return article;
-    } catch (error) {
-        console.error('Error loading article from D1:', error);
-        return null;
+        const stmt = db.prepare(query);
+        const { results } = await stmt.bind(...params).all();
+        return results || [];
+    } catch (e) {
+        console.error('Error fetching category articles from D1:', e);
+        return [];
     }
 }
 
-export default async function ArticleDetailsPage({ params }: ArticlePageProps) {
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
     const resolvedParams = await params;
-    const { category, slug } = resolvedParams;
+    const categorySlug = resolvedParams?.category || '';
+    const title = categorySlug.replace(/-/g, ' ').toUpperCase();
 
-    if (!slug) notFound();
+    return {
+        title: `${title} News | ${siteConfig.name}`,
+        description: `Latest news and updates in ${title}`,
+        alternates: {
+            canonical: `${siteConfig.url}${getCategoryUrl(categorySlug)}`,
+        },
+    };
+}
 
-    const article = await fetchArticle(slug);
+export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+    const resolvedParams = await params;
+    const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
-    if (!article) notFound();
+    const categorySlug = resolvedParams?.category || '';
+    const subCategory = resolvedSearchParams?.sub;
+    const articles = await getCategoryArticles(categorySlug, subCategory);
+    const categoryTitle = categorySlug.replace(/-/g, ' ');
 
     return (
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-            <Link
-                href="/"
-                className="inline-flex items-center gap-1.5 text-sm font-bold text-[#cc0000] hover:underline mb-8"
-            >
-                <ArrowLeft size={16} /> Back to Home
-            </Link>
-
-            <header className="space-y-4">
-                <span className="bg-[#cc0000] text-white text-xs font-black uppercase tracking-wider px-3 py-1 rounded w-fit inline-block">
-                    {article.category || decodeURIComponent(category)}
-                </span>
-
-                <h1 className="text-3xl sm:text-5xl font-black text-gray-900 leading-tight">
-                    {article.title}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <div className="border-b-2 border-gray-900 pb-3 flex items-baseline justify-between">
+                <h1 className="text-2xl sm:text-3xl font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+                    <span className="w-2.5 h-7 bg-[#cc0000] inline-block rounded-sm"></span>
+                    {categoryTitle}
+                    {subCategory && <span className="text-gray-400 font-normal text-lg ml-2 capitalize">/ {subCategory.replace(/-/g, ' ')}</span>}
                 </h1>
+                <span className="text-xs font-bold text-gray-500 uppercase">{articles.length} Articles</span>
+            </div>
 
-                {article.excerpt && (
-                    <p className="text-lg sm:text-xl text-gray-600 font-medium leading-relaxed">
-                        {article.excerpt}
-                    </p>
-                )}
-
-                <div className="flex flex-wrap items-center gap-6 py-4 border-y border-gray-200 text-sm text-gray-600 font-semibold">
-                    <span className="flex items-center gap-1.5">
-                        <User size={16} className="text-[#cc0000]" /> {article.author_name || 'Editorial Staff'}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <Clock size={16} className="text-[#cc0000]" /> {new Date(article.created_at || Date.now()).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                        })}
-                    </span>
+            {articles.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center my-6">
+                    <p className="text-gray-500 font-medium">No articles found in this category yet.</p>
                 </div>
-            </header>
-
-            {article.featured_image && (
-                <figure className="my-8 rounded-xl overflow-hidden shadow-md">
-                    <img
-                        src={article.featured_image}
-                        alt={article.image_alt || article.title}
-                        className="w-full h-auto max-h-[520px] object-cover"
-                    />
-                    {article.image_alt && (
-                        <figcaption className="text-xs text-gray-400 mt-2 text-center">
-                            {article.image_alt}
-                        </figcaption>
-                    )}
-                </figure>
-            )}
-
-            <div
-                className="text-gray-800 text-lg leading-relaxed space-y-6 pt-2 font-normal"
-                dangerouslySetInnerHTML={{ __html: article.content }}
-            />
-
-            {article.tags && (
-                <footer className="mt-12 pt-6 border-t border-gray-200 flex flex-wrap items-center gap-2">
-                    <Tag size={16} className="text-gray-400" />
-                    {article.tags.split(',').map((t: string) => (
-                        <span key={t} className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded font-semibold">
-                            #{t.trim()}
-                        </span>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {articles.map((article: any) => (
+                        <Link
+                            key={article.id}
+                            href={getArticleUrl(article.category, article.slug)}
+                            className="group bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                        >
+                            {article.featured_image && (
+                                <div className="h-44 w-full overflow-hidden bg-gray-100">
+                                    <img
+                                        src={article.featured_image}
+                                        alt={article.title}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                    />
+                                </div>
+                            )}
+                            <div className="p-4 flex flex-col flex-1">
+                                <span className="text-[11px] font-black text-[#cc0000] uppercase tracking-wider block mb-1">
+                                    {article.category}
+                                </span>
+                                <h2 className="font-bold text-sm sm:text-base text-gray-900 group-hover:text-[#cc0000] line-clamp-2 leading-snug mb-2">
+                                    {article.title}
+                                </h2>
+                                <div className="mt-auto pt-3 border-t border-gray-100 text-xs text-gray-400 flex items-center gap-1">
+                                    <Clock size={12} />
+                                    <span>{timeAgo(article.published_at || article.created_at)}</span>
+                                </div>
+                            </div>
+                        </Link>
                     ))}
-                </footer>
+                </div>
             )}
         </main>
     );

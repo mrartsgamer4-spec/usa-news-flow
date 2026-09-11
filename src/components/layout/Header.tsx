@@ -144,8 +144,8 @@ export default function Header() {
                     </div>
                     <div className="flex flex-col leading-snug">
                         <span className="text-sm font-bold text-gray-900">New York, USA</span>
-                        <span className="text-xs text-gray-500 font-medium">{dcDate || 'Friday, September 11, 2026'}</span>
-                        <span className="text-xs font-black text-[#cc0000] tracking-wider">{dcTime || '05:10 PM EDT'}</span>
+                        <span className="text-xs text-gray-500 font-medium">{dcDate}</span>
+                        <span className="text-xs font-black text-[#cc0000] tracking-wider">{dcTime}</span>
                     </div>
                 </div>
 
@@ -165,8 +165,8 @@ export default function Header() {
                 </div>
             </div>
 
-            {/* Premium Navy Blue Navigation Bar */}
-            <nav className="bg-[#001737] text-white border-t-2 border-[#cc0000]">
+            {/* Red Navbar with Pure White Text */}
+            <nav className="bg-[#cc0000] text-white shadow-md">
                 <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
 
                     {/* Desktop Menu */}
@@ -177,23 +177,23 @@ export default function Header() {
                                 <div key={item.label} className="relative group">
                                     <Link
                                         href={item.href}
-                                        className={`px-4 py-3.5 text-[15px] font-bold tracking-normal flex items-center gap-1.5 transition duration-150 ${isActive
-                                                ? 'bg-[#cc0000] text-white'
-                                                : 'text-gray-100 hover:bg-[#07244c] hover:text-white'
+                                        className={`px-3.5 py-3 text-[14px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 transition duration-150 ${isActive
+                                                ? 'bg-[#990000] text-white'
+                                                : 'text-white hover:bg-[#b30000]'
                                             }`}
                                     >
-                                        {item.isHome && <Home size={16} />}
+                                        {item.isHome && <Home size={15} />}
                                         {item.label}
-                                        {item.sub && <ChevronDown size={14} className="group-hover:rotate-180 transition-transform opacity-70" />}
+                                        {item.sub && <ChevronDown size={13} className="group-hover:rotate-180 transition-transform duration-200" />}
                                     </Link>
 
                                     {item.sub && (
-                                        <div className="absolute top-full left-0 hidden group-hover:block bg-[#001737] text-white shadow-2xl border-t-2 border-[#cc0000] py-2 min-w-[200px] z-50">
+                                        <div className="absolute top-full left-0 hidden group-hover:block bg-white text-gray-900 shadow-2xl border-t-2 border-[#990000] py-2 min-w-[210px] z-50">
                                             {item.sub.map((subItem) => (
                                                 <Link
                                                     key={subItem.label}
                                                     href={subItem.href}
-                                                    className="block px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-[#cc0000] hover:text-white transition"
+                                                    className="block px-4 py-2.5 text-xs font-bold text-gray-800 hover:bg-red-50 hover:text-[#cc0000] border-b border-gray-50 last:border-0 transition"
                                                 >
                                                     {subItem.label}
                                                 </Link>
@@ -206,10 +206,10 @@ export default function Header() {
                     </div>
 
                     {/* Tools & Calculators */}
-                    <div className="hidden lg:flex items-center space-x-2 py-2 pl-4">
+                    <div className="hidden lg:flex items-center space-x-2 py-2 pl-4 border-l border-red-400">
                         <div className="relative group">
-                            <button className="px-3 py-1.5 bg-[#07244c] text-white border border-[#1d3d6e] rounded font-semibold text-xs flex items-center gap-1.5 hover:bg-[#cc0000] transition">
-                                <Wrench size={13} />
+                            <button className="px-3 py-1.5 bg-white text-gray-900 rounded font-bold text-xs uppercase flex items-center gap-1.5 hover:bg-gray-100 shadow-sm transition">
+                                <Wrench size={13} className="text-[#cc0000]" />
                                 Tools
                                 <ChevronDown size={12} />
                             </button>
@@ -224,7 +224,7 @@ export default function Header() {
                         </div>
 
                         <div className="relative group">
-                            <button className="px-3 py-1.5 bg-[#07244c] text-white border border-[#1d3d6e] rounded font-semibold text-xs flex items-center gap-1.5 hover:bg-[#cc0000] transition">
+                            <button className="px-3 py-1.5 bg-[#990000] text-white rounded font-bold text-xs uppercase flex items-center gap-1.5 hover:bg-[#800000] shadow-sm transition">
                                 <Calculator size={13} />
                                 Calculators
                                 <ChevronDown size={12} />
@@ -240,6 +240,47 @@ export default function Header() {
                         </div>
                     </div>
                 </div>
+
+                {/* Mobile Menu */}
+                {mobileOpen && (
+                    <div className="lg:hidden bg-[#b30000] px-4 py-3 space-y-1 border-t border-red-400 max-h-[80vh] overflow-y-auto">
+                        {NAVIGATION_CONFIG.map((item) => (
+                            <div key={item.label}>
+                                <div className="flex items-center justify-between border-b border-red-700 py-2">
+                                    <Link
+                                        href={item.href}
+                                        onClick={() => setMobileOpen(false)}
+                                        className="text-sm font-extrabold uppercase text-white"
+                                    >
+                                        {item.label}
+                                    </Link>
+                                    {item.sub && (
+                                        <button
+                                            onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
+                                            className="p-1 text-white"
+                                        >
+                                            <ChevronDown size={16} />
+                                        </button>
+                                    )}
+                                </div>
+                                {item.sub && openDropdown === item.label && (
+                                    <div className="bg-[#990000] rounded my-1 py-1 pl-4">
+                                        {item.sub.map((subItem) => (
+                                            <Link
+                                                key={subItem.label}
+                                                href={subItem.href}
+                                                onClick={() => setMobileOpen(false)}
+                                                className="block py-1.5 text-xs text-white hover:underline"
+                                            >
+                                                &bull; {subItem.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </nav>
         </header>
     );
