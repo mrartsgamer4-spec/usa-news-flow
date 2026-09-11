@@ -76,10 +76,11 @@ export async function POST(req: NextRequest) {
 
         if (!finalSlug) finalSlug = `news-${Date.now()}`;
 
-        // sub_category আলাদা কলাম না থাকায় এটি tags ফিল্ডে ট্যাগ হিসেবে সংযুক্ত হবে
+        // সাব-ক্যাটাগরি থাকলে সেটির নাম ও স্লাগ উভয়ই tags-এ সেভ করা যাতে ফিল্টারিং কাজ করে
         let finalTags = tags ? tags.trim() : '';
         if (sub_category && sub_category.trim()) {
-            finalTags = finalTags ? `${sub_category}, ${finalTags}` : sub_category;
+            const subSlug = sub_category.toLowerCase().replace(/[\s_]+/g, '-');
+            finalTags = `${sub_category}, ${subSlug}${finalTags ? `, ${finalTags}` : ''}`;
         }
 
         const articleId = crypto.randomUUID();
@@ -143,7 +144,8 @@ export async function PUT(req: NextRequest) {
 
         let finalTags = tags ? tags.trim() : '';
         if (sub_category && sub_category.trim()) {
-            finalTags = finalTags ? `${sub_category}, ${finalTags}` : sub_category;
+            const subSlug = sub_category.toLowerCase().replace(/[\s_]+/g, '-');
+            finalTags = `${sub_category}, ${subSlug}${finalTags ? `, ${finalTags}` : ''}`;
         }
 
         const now = new Date().toISOString();

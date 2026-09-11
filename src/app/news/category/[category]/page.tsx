@@ -20,6 +20,7 @@ function timeAgo(dateString?: string): string {
     if (!dateString) return 'Recently';
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Recently';
+
     const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
     if (seconds < 60) return 'Just now';
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
@@ -37,15 +38,16 @@ async function getCategoryArticles(categorySlug: string, subCategory?: string) {
         if (!db) db = (process.env as any).DB;
         if (!db) return [];
 
-        // ক্যাটাগরির নাম নরম্যালাইজ করা (যেমন: us-news -> %us%news%)
         const searchCat = categorySlug.replace(/-/g, '%');
         let query = 'SELECT * FROM articles WHERE (LOWER(category) LIKE LOWER(?) OR LOWER(category) LIKE LOWER(?))';
         const params: any[] = [`%${searchCat}%`, `%${categorySlug}%`];
 
-        if (subCategory) {
-            const searchSub = subCategory.replace(/-/g, '%');
-            query += ' AND (LOWER(sub_category) LIKE LOWER(?) OR LOWER(tags) LIKE LOWER(?) OR LOWER(title) LIKE LOWER(?))';
-            params.push(`%${searchSub}%`, `%${searchSub}%`, `%${searchSub}%`);
+        if (subCategory && subCategory.trim() !== '') {
+            const cleanSub = subCategory.replace(/-/g, ' ').trim();
+            const wildcardSub = `%${subCategory.replace(/-/g, '%')}%`;
+            // D1-এ sub_category কলাম নেই, তাই tags এবং title ফিল্ডে সাব-ক্যাটাগরি ম্যাচ করা হবে
+            query += ' AND (LOWER(tags) LIKE LOWER(?) OR LOWER(tags) LIKE LOWER(?) OR LOWER(title) LIKE LOWER(?))';
+            params.push(`%${cleanSub}%`, wildcardSub, `%${cleanSub}%`);
         }
 
         query += ' ORDER BY created_at DESC LIMIT 50';
@@ -59,10 +61,14 @@ async function getCategoryArticles(categorySlug: string, subCategory?: string) {
     }
 }
 
-export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: CategoryPageProps): Promise<Metadata> {
     const resolvedParams = await params;
+    const resolvedSearchParams = searchParams ? await searchParams : undefined;
     const categorySlug = resolvedParams?.category || '';
-    const title = categorySlug.replace(/-/g, ' ').toUpperCase();
+    const sub = resolvedSearchParams?.sub;
+
+    const baseTitle = categorySlug.replace(/-/g, ' ').toUpperCase();
+    const title = sub ? `${sub.replace(/-/g, ' ').toUpperCase()} - ${baseTitle}` : baseTitle;
 
     return {
         title: `${title} News | ${siteConfig.name}`,
@@ -81,6 +87,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     const subCategory = resolvedSearchParams?.sub;
     const articles = await getCategoryArticles(categorySlug, subCategory);
     const categoryTitle = categorySlug.replace(/-/g, ' ');
+    const displaySubTitle = subCategory ? subCategory.replace(/-/g, ' ') : null;
 
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -88,14 +95,18 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                 <h1 className="text-2xl sm:text-3xl font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
                     <span className="w-2.5 h-7 bg-[#cc0000] inline-block rounded-sm"></span>
                     {categoryTitle}
-                    {subCategory && <span className="text-gray-400 font-normal text-lg ml-2 capitalize">/ {subCategory.replace(/-/g, ' ')}</span>}
+                    {displaySubTitle && (
+                        <span className="text-red-600 font-bold text-lg sm:text-2xl ml-2 capitalize">
+                            / {displaySubTitle}
+                        </span>
+                    )}
                 </h1>
                 <span className="text-xs font-bold text-gray-500 uppercase">{articles.length} Articles</span>
             </div>
 
             {articles.length === 0 ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-12 text-center my-6">
-                    <p className="text-gray-500 font-medium">No articles found in this category yet.</p>
+                    <p className="text-gray-500 font-medium">No articles found in {displaySubTitle || categoryTitle} yet.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -103,6 +114,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                         <Link
                             key={article.id}
                             href={getArticleUrl(article.category, article.slug)}
+                            prefetch={false}
                             className="group bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
                         >
                             {article.featured_image && (
