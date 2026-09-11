@@ -1,44 +1,56 @@
+export const runtime = 'edge';
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-
-const CATEGORY_MAP: Record<string, string[]> = {
-    'U.S. News': ['Donald Trump', 'White House News', 'Breaking News'],
-    'Politics': ['Congress', 'Elections', 'Policy & Law'],
-    'World': ['Global Affairs', 'Europe', 'Asia-Pacific', 'Middle East'],
-    'Business': ['Economy', 'Markets', 'Finance', 'Real Estate'],
-    'Technology': ['AI News', 'Latest AI News', 'AI Technology'],
-    'Health': ['Medicine', 'Wellness', 'Research'],
-    'Sports': ['NFL & Football', 'NBA & Basketball', 'Cricket'],
-};
+import {
+    PlusCircle, Trash2, Edit3, ExternalLink,
+    RefreshCw, CheckCircle, AlertCircle, Eye, LogOut
+} from 'lucide-react';
 
 export default function AdminDashboard() {
     const [articles, setArticles] = useState<any[]>([]);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-    const [formData, setFormData] = useState({
-        title: '',
-        slug: '',
-        featured_image: '',
-        image_caption: '',
-        writer_name: '',
-        category: 'U.S. News',
-        sub_category: 'Donald Trump',
-        content: '',
-        status: 'published',
-    });
+    // ফর্ম স্টেট
+    const [title, setTitle] = useState('');
+    const [slug, setSlug] = useState('');
+    const [category, setCategory] = useState('U.S. News');
+    const [subCategory, setSubCategory] = useState('');
+    const [reporterName, setReporterName] = useState('');
+    const [featuredImage, setFeaturedImage] = useState('');
+    const [imageAlt, setImageAlt] = useState('');
+    const [excerpt, setExcerpt] = useState('');
+    const [content, setContent] = useState('');
+    const [tags, setTags] = useState('');
+
+    const CATEGORY_LIST = [
+        { name: 'Politics', subs: ['Congress', 'Elections', 'Policy & Law'] },
+        { name: 'U.S. News', subs: ['Donald Trump', 'White House News', 'Breaking News'] },
+        { name: 'World', subs: ['Global Affairs', 'Europe', 'Asia-Pacific', 'Middle East'] },
+        { name: 'Business', subs: ['Economy', 'Markets', 'Finance', 'Real Estate'] },
+        { name: 'Tech', subs: ['AI News', 'Latest AI News', 'AI Technology'] },
+        { name: 'Health', subs: ['Medicine', 'Wellness', 'Research'] },
+        { name: 'Sports', subs: ['NFL & Football', 'NBA & Basketball', 'Cricket'] },
+        { name: 'Entertainment', subs: [] },
+        { name: 'Opinion', subs: [] }
+    ];
 
     const fetchArticles = async () => {
+        setLoading(true);
         try {
             const res = await fetch('/api/news');
-            if (res.ok) {
-                const data = await res.json();
-                setArticles(data);
+            const data = await res.json();
+            if (data.success) {
+                setArticles(data.articles || []);
             }
-        } catch (err) {
-            console.error('Failed to fetch articles:', err);
+        } catch (e) {
+            console.error('Failed to load articles', e);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -46,285 +58,278 @@ export default function AdminDashboard() {
         fetchArticles();
     }, []);
 
-    const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const title = e.target.value;
-        const slug = title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)+/g, '');
-
-        setFormData((prev) => ({
-            ...prev,
-            title,
-            slug: prev.slug && editingId ? prev.slug : slug,
-        }));
-    };
-
-    const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedCategory = e.target.value;
-        const availableSubCategories = CATEGORY_MAP[selectedCategory] || [];
-
-        setFormData((prev) => ({
-            ...prev,
-            category: selectedCategory,
-            sub_category: availableSubCategories[0] || '',
-        }));
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSubmitting(true);
+        if (!title.trim() || !content.trim()) {
+            setMessage({ type: 'error', text: 'Title and content are required!' });
+            return;
+        }
+
+        setSubmitting(true);
+        setMessage(null);
 
         try {
-            const url = '/api/news';
-            const method = editingId ? 'PUT' : 'POST';
-            const bodyData = editingId ? { ...formData, id: editingId } : formData;
-
-            const res = await fetch(url, {
-                method,
+            const res = await fetch('/api/news', {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(bodyData),
+                body: JSON.stringify({
+                    title,
+                    slug,
+                    category,
+                    sub_category: subCategory,
+                    reporter_name: reporterName,
+                    featured_image: featuredImage,
+                    image_alt: imageAlt || title,
+                    excerpt,
+                    content,
+                    tags,
+                    status: 'published'
+                })
             });
 
-            if (res.ok) {
-                alert(editingId ? 'Article updated successfully!' : 'Article published successfully!');
-                setFormData({
-                    title: '',
-                    slug: '',
-                    featured_image: '',
-                    image_caption: '',
-                    writer_name: '',
-                    category: 'U.S. News',
-                    sub_category: 'Donald Trump',
-                    content: '',
-                    status: 'published',
-                });
-                setEditingId(null);
+            const data = await res.json();
+
+            if (data.success) {
+                setMessage({ type: 'success', text: 'Article published successfully!' });
+                setTitle('');
+                setSlug('');
+                setReporterName('');
+                setFeaturedImage('');
+                setImageAlt('');
+                setExcerpt('');
+                setContent('');
+                setTags('');
                 fetchArticles();
             } else {
-                const errData = await res.json();
-                alert(`Error: ${errData.error || 'Failed to save article'}`);
+                setMessage({ type: 'error', text: data.error || 'Failed to publish article.' });
             }
-        } catch (err) {
-            alert('An error occurred while saving.');
+        } catch (err: any) {
+            setMessage({ type: 'error', text: 'Server error occurred.' });
         } finally {
-            setIsSubmitting(false);
+            setSubmitting(false);
         }
     };
 
-    const handleEdit = (article: any) => {
-        setEditingId(article.id);
-        setFormData({
-            title: article.title || '',
-            slug: article.slug || '',
-            featured_image: article.featured_image || '',
-            image_caption: article.image_caption || '',
-            writer_name: article.author || '',
-            category: article.category || 'U.S. News',
-            sub_category: article.subcategory || 'Donald Trump',
-            content: article.content || '',
-            status: article.status || 'published',
-        });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this article?')) return;
-
-        try {
-            const res = await fetch(`/api/news?id=${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                alert('Article deleted successfully!');
-                fetchArticles();
-            } else {
-                alert('Failed to delete article.');
-            }
-        } catch (err) {
-            console.error('Delete error:', err);
-        }
-    };
+    const currentSubs = CATEGORY_LIST.find(c => c.name === category)?.subs || [];
 
     return (
-        <div className="max-w-5xl mx-auto p-6">
-            <h1 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">
-                {editingId ? 'Edit News Article' : 'Publish New Article'}
-            </h1>
+        <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto space-y-8">
 
-            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-md shadow border border-gray-200 mb-10 space-y-4">
-                {/* 1. Title */}
-                <div>
-                    <label className="block text-sm font-bold text-gray-700">1. Title</label>
-                    <input
-                        type="text"
-                        required
-                        value={formData.title}
-                        onChange={handleTitleChange}
-                        className="w-full mt-1 p-2 border rounded focus:ring-red-500 focus:border-red-500 text-sm"
-                    />
-                </div>
-
-                {/* 2. Slug */}
-                <div>
-                    <label className="block text-sm font-bold text-gray-700">2. Slug</label>
-                    <input
-                        type="text"
-                        required
-                        value={formData.slug}
-                        onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                        className="w-full mt-1 p-2 border rounded text-sm bg-gray-50"
-                    />
-                </div>
-
-                {/* 3. Image URL & 4. Image Caption */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Header */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <label className="block text-sm font-bold text-gray-700">3. Image URL</label>
-                        <input
-                            type="url"
-                            value={formData.featured_image}
-                            onChange={(e) => setFormData({ ...formData, featured_image: e.target.value })}
-                            placeholder="https://example.com/image.jpg"
-                            className="w-full mt-1 p-2 border rounded text-sm"
-                        />
+                        <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                            <span className="w-3 h-7 bg-[#cc0000] inline-block rounded-sm"></span>
+                            USA News Flow Editorial Dashboard
+                        </h1>
+                        <p className="text-xs text-gray-500 font-semibold mt-1">Publish news, assign reporters, and manage article categories.</p>
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700">4. Image Caption</label>
-                        <input
-                            type="text"
-                            value={formData.image_caption}
-                            onChange={(e) => setFormData({ ...formData, image_caption: e.target.value })}
-                            placeholder="Enter image caption/credit"
-                            className="w-full mt-1 p-2 border rounded text-sm"
-                        />
-                    </div>
-                </div>
-
-                {/* 5. Writer Name, Category & Sub Category */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700">5. Writer Name</label>
-                        <input
-                            type="text"
-                            value={formData.writer_name}
-                            onChange={(e) => setFormData({ ...formData, writer_name: e.target.value })}
-                            placeholder="Author Name"
-                            className="w-full mt-1 p-2 border rounded text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700">6. Category (Main Menu)</label>
-                        <select
-                            value={formData.category}
-                            onChange={handleCategoryChange}
-                            className="w-full mt-1 p-2 border rounded text-sm font-medium"
-                        >
-                            {Object.keys(CATEGORY_MAP).map((cat) => (
-                                <option key={cat} value={cat}>
-                                    {cat}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700">Sub Category (Sub Menu)</label>
-                        <select
-                            value={formData.sub_category}
-                            onChange={(e) => setFormData({ ...formData, sub_category: e.target.value })}
-                            className="w-full mt-1 p-2 border rounded text-sm font-medium"
-                        >
-                            {(CATEGORY_MAP[formData.category] || []).map((sub) => (
-                                <option key={sub} value={sub}>
-                                    {sub}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {/* 7. Main Text / HTML */}
-                <div>
-                    <label className="block text-sm font-bold text-gray-700">7. Main Text / HTML</label>
-                    <textarea
-                        rows={8}
-                        required
-                        value={formData.content}
-                        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                        className="w-full mt-1 p-2 border rounded font-mono text-sm"
-                    />
-                </div>
-
-                {/* Status Selection */}
-                <div>
-                    <label className="block text-sm font-bold text-gray-700">Post Status</label>
-                    <select
-                        value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        className="w-full md:w-1/3 mt-1 p-2 border rounded text-sm"
+                    <Link
+                        href="/"
+                        target="_blank"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-black transition"
                     >
-                        <option value="published">Published</option>
-                        <option value="draft">Draft</option>
-                    </select>
+                        View Live Site <ExternalLink size={14} />
+                    </Link>
                 </div>
 
-                {/* 8. Publish Button */}
-                <div className="flex gap-4 pt-2">
-                    <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="bg-red-600 text-white px-8 py-2.5 rounded font-bold hover:bg-red-700 disabled:bg-gray-400 text-sm"
-                    >
-                        {isSubmitting ? 'Publishing...' : editingId ? 'Update Article' : 'Publish News'}
-                    </button>
-                    {editingId && (
+                {/* Publish News Form */}
+                <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
+                    <h2 className="text-lg font-black text-gray-900 mb-6 uppercase flex items-center gap-2 border-b pb-3">
+                        <PlusCircle size={20} className="text-[#cc0000]" /> Publish New Article
+                    </h2>
+
+                    {message && (
+                        <div className={`p-4 mb-6 rounded-xl flex items-center gap-2 text-sm font-bold ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                            }`}>
+                            {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                            {message.text}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Article Title *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    placeholder="Enter news title..."
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Custom Slug (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={slug}
+                                    onChange={(e) => setSlug(e.target.value)}
+                                    placeholder="e.g. us-house-passes-bill"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Reporter / Author Name</label>
+                                <input
+                                    type="text"
+                                    value={reporterName}
+                                    onChange={(e) => setReporterName(e.target.value)}
+                                    placeholder="e.g. John Doe, Staff Reporter"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Main Category</label>
+                                <select
+                                    value={category}
+                                    onChange={(e) => {
+                                        setCategory(e.target.value);
+                                        setSubCategory('');
+                                    }}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-[#cc0000] outline-none"
+                                >
+                                    {CATEGORY_LIST.map((c) => (
+                                        <option key={c.name} value={c.name}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Sub Category</label>
+                                <select
+                                    value={subCategory}
+                                    onChange={(e) => setSubCategory(e.target.value)}
+                                    disabled={currentSubs.length === 0}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-[#cc0000] outline-none disabled:bg-gray-100"
+                                >
+                                    <option value="">None / Main Only</option>
+                                    {currentSubs.map((sub) => (
+                                        <option key={sub} value={sub}>{sub}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Featured Image URL</label>
+                                <input
+                                    type="text"
+                                    value={featuredImage}
+                                    onChange={(e) => setFeaturedImage(e.target.value)}
+                                    placeholder="https://example.com/image.jpg"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
+                                />
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Short Excerpt</label>
+                                <textarea
+                                    rows={2}
+                                    value={excerpt}
+                                    onChange={(e) => setExcerpt(e.target.value)}
+                                    placeholder="Brief 1-2 sentence overview..."
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
+                                />
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Article Content (HTML / Text) *</label>
+                                <textarea
+                                    rows={8}
+                                    required
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                    placeholder="Type or paste the full news article here..."
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
+                                />
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Tags (Comma-separated)</label>
+                                <input
+                                    type="text"
+                                    value={tags}
+                                    onChange={(e) => setTags(e.target.value)}
+                                    placeholder="e.g. trump, whitehouse, breaking"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
+                                />
+                            </div>
+                        </div>
+
                         <button
-                            type="button"
-                            onClick={() => {
-                                setEditingId(null);
-                                setFormData({
-                                    title: '', slug: '', featured_image: '', image_caption: '', writer_name: '', category: 'U.S. News', sub_category: 'Donald Trump', content: '', status: 'published'
-                                });
-                            }}
-                            className="bg-gray-500 text-white px-5 py-2.5 rounded text-sm hover:bg-gray-600"
+                            type="submit"
+                            disabled={submitting}
+                            className="w-full py-3.5 bg-[#cc0000] text-white font-extrabold uppercase rounded-xl hover:bg-[#b30000] transition shadow-md disabled:bg-gray-400"
                         >
-                            Cancel Edit
+                            {submitting ? 'Publishing News...' : 'Publish News'}
                         </button>
+                    </form>
+                </div>
+
+                {/* Published Articles List */}
+                <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
+                    <div className="flex items-center justify-between mb-6 border-b pb-3">
+                        <h2 className="text-lg font-black text-gray-900 uppercase">
+                            Published Articles ({articles.length})
+                        </h2>
+                        <button
+                            onClick={fetchArticles}
+                            className="p-2 text-gray-500 hover:text-gray-900 transition"
+                            title="Refresh List"
+                        >
+                            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
+
+                    {loading ? (
+                        <div className="text-center py-10 text-gray-400 font-semibold text-sm">Loading articles...</div>
+                    ) : articles.length === 0 ? (
+                        <div className="text-center py-10 text-gray-400 font-semibold text-sm">No articles published yet.</div>
+                    ) : (
+                        <div className="divide-y divide-gray-100">
+                            {articles.map((item) => (
+                                <div key={item.id} className="py-4 flex flex-wrap items-center justify-between gap-3">
+                                    <div className="flex-1 min-w-[280px]">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-[10px] font-black text-[#cc0000] uppercase bg-red-50 px-2 py-0.5 rounded">
+                                                {item.category}
+                                            </span>
+                                            {item.sub_category && (
+                                                <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                                    {item.sub_category}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h3 className="font-bold text-sm sm:text-base text-gray-900 leading-snug">
+                                            {item.title}
+                                        </h3>
+                                        <div className="text-xs text-gray-400 mt-1 flex gap-4">
+                                            <span>Author: <strong className="text-gray-700">{item.author_name || item.reporter_name || 'N/A'}</strong></span>
+                                            <span>Date: {new Date(item.created_at || Date.now()).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <Link
+                                            href={`/news/article/${item.slug}`}
+                                            target="_blank"
+                                            className="p-2 text-gray-600 hover:text-[#cc0000] border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                            title="View Post"
+                                        >
+                                            <Eye size={16} />
+                                        </Link>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </div>
-            </form>
 
-            {/* Published Articles List */}
-            <h2 className="text-xl font-bold mb-4 text-gray-800">Published News Articles List</h2>
-            <div className="bg-white rounded border border-gray-200 overflow-hidden shadow-sm">
-                {articles.length === 0 ? (
-                    <p className="p-4 text-gray-500 text-sm">No news articles found in D1 database.</p>
-                ) : (
-                    <div className="divide-y">
-                        {articles.map((art: any) => (
-                            <div key={art.id} className="p-4 flex justify-between items-center hover:bg-gray-50">
-                                <div>
-                                    <Link
-                                        href={`/news/${art.slug}`}
-                                        target="_blank"
-                                        className="font-bold text-blue-700 hover:underline text-base"
-                                    >
-                                        {art.title} ↗
-                                    </Link>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Category: <span className="font-bold text-gray-700">{art.category}</span> | Sub Category: <span className="font-bold text-gray-700">{art.subcategory || 'N/A'}</span> | Author: {art.author || 'N/A'} | Status: <span className="uppercase text-green-600 font-semibold">{art.status}</span>
-                                    </p>
-                                </div>
-                                <div className="flex gap-4 text-xs font-bold">
-                                    <button onClick={() => handleEdit(art)} className="text-blue-600 hover:underline">
-                                        Edit
-                                    </button>
-                                    <button onClick={() => handleDelete(art.id)} className="text-red-600 hover:underline">
-                                        Delete
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
             </div>
         </div>
     );

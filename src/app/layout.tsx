@@ -35,7 +35,12 @@ export const metadata: Metadata = {
         },
     },
     icons: {
-        icon: '/favicon.ico',
+        icon: [
+            { url: '/icon.png?v=3', type: 'image/png' },
+            { url: '/logo.png?v=3', type: 'image/png' },
+        ],
+        shortcut: '/icon.png?v=3',
+        apple: '/icon.png?v=3',
     },
     openGraph: {
         type: 'website',
@@ -73,6 +78,10 @@ export default function RootLayout({
     return (
         <html lang="en">
             <head>
+                {/* সরাসরি ব্রাউজার ট্যাবে লোগো প্রদর্শনের হার্ডলিঙ্ক */}
+                <link rel="icon" href="/icon.png?v=3" type="image/png" />
+                <link rel="shortcut icon" href="/icon.png?v=3" type="image/png" />
+                <link rel="apple-touch-icon" href="/icon.png?v=3" />
                 <JsonLd data={[orgSchema, websiteSchema]} />
             </head>
             <body className="bg-gray-100 text-gray-900 min-h-screen flex flex-col antialiased text-base">
