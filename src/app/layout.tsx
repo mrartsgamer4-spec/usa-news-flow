@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { siteConfig } from '@/lib/siteConfig';
 import '@/app/globals.css';
 import Header from '@/components/layout/Header';
@@ -85,6 +86,21 @@ export default function RootLayout({
                 <JsonLd data={[orgSchema, websiteSchema]} />
             </head>
             <body className="bg-gray-100 text-gray-900 min-h-screen flex flex-col antialiased text-base">
+                {/* Google Analytics (gtag.js) */}
+                <Script
+                    src="https://www.googletagmanager.com/gtag/js?id=G-MP01NK9328"
+                    strategy="afterInteractive"
+                />
+                <Script id="google-analytics" strategy="afterInteractive">
+                    {`
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag(){dataLayer.push(arguments);}
+                        gtag('js', new Date());
+
+                        gtag('config', 'G-MP01NK9328');
+                    `}
+                </Script>
+
                 <Header />
                 <main className="flex-grow w-full">{children}</main>
                 <Footer />
