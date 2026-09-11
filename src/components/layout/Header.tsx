@@ -84,7 +84,7 @@ const TOOLS_ITEMS = [
     { label: "Image to PDF", href: "/tools/image-to-pdf", icon: ImageIcon },
     { label: "PDF to Image", href: "/tools/pdf-to-image", icon: FileText },
     { label: "QR Code Generator", href: "/tools/qr-code", icon: QrCode },
-    { label: "Word Counter", href: "/tools/word-counter", icon: Type },
+    { label: "Word to PDF", href: "/tools/word-to-pdf", icon: FileText },
 ];
 
 const CALCULATOR_ITEMS = [
