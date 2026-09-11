@@ -156,9 +156,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                     </figure>
                 )}
 
-                {/* রিডএবল বডি কনটেন্ট */}
+                {/* রিডএবল বডি কনটেন্ট (প্যারাগ্রাফ ও এন্টার ধরে রাখার জন্য whitespace-pre-line যুক্ত) */}
                 <div
-                    className="text-[#222222] text-[17px] sm:text-[18px] leading-[1.75] space-y-5 font-normal tracking-normal pt-1"
+                    className="text-[#222222] text-[17px] sm:text-[18px] leading-[1.8] font-normal tracking-normal pt-1 whitespace-pre-line space-y-4"
                     dangerouslySetInnerHTML={{ __html: article.content }}
                 />
 
