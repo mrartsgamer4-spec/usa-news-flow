@@ -130,7 +130,7 @@ export default function Footer() {
                         <li><Link href="/advertising-policy" className="hover:text-white transition">Advertising Policy</Link></li>
                         <li><Link href="/corrections-policy" className="hover:text-white transition">Corrections Policy</Link></li>
                         <li><Link href="/contact" className="hover:text-white transition">contact</Link></li>
-                        <li><Link href="/sitemap" className="hover:text-white transition">Sitemap</Link></li>
+                        <li><Link href="/sitemap.xml" target="_blank" className="hover:text-white transition">Sitemap</Link></li>
                         <li><Link href="/rss-feeds" className="hover:text-white transition">RSS Feeds</Link></li>
                     </ul>
                 </div>
