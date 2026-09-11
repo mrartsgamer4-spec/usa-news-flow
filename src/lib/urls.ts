@@ -1,42 +1,43 @@
-import { siteConfig } from './siteConfig';
+export function getArticleUrl(category: any, slug: string): string {
+    let catSlug = 'general';
 
-function slugify(text: string): string {
-    if (!text) return 'general';
-    return text
+    if (typeof category === 'string') {
+        catSlug = category;
+    } else if (category && typeof category === 'object' && 'name' in category) {
+        catSlug = category.name || 'general';
+    }
+
+    const cleanCategory = catSlug
         .toLowerCase()
         .trim()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-');
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    const cleanSlug = (slug || '')
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    // কোনো ডোমেন বা .com ছাড়া সরাসরি ইন্টারনাল পাথ
+    return `/news/${cleanCategory || 'general'}/${cleanSlug}`;
 }
 
-/**
- * জেনারেট করে যেকোনো আর্টিকেলের ক্যানোনিকাল ও রিলেটিভ URL
- */
-export function getArticleUrl(category: string, slug: string): string {
-    const cleanCategory = slugify(category);
-    return `${siteConfig.url}/news/${cleanCategory}/${slug}`;
-}
+export function getCategoryUrl(category: any): string {
+    let catSlug = 'general';
 
-/**
- * জেনারেট করে ক্যাটাগরি পেজের URL
- */
-export function getCategoryUrl(category: string): string {
-    const cleanCategory = slugify(category);
-    return `${siteConfig.url}/news/category/${cleanCategory}`;
-}
+    if (typeof category === 'string') {
+        catSlug = category;
+    } else if (category && typeof category === 'object' && 'name' in category) {
+        catSlug = category.name || 'general';
+    }
 
-/**
- * জেনারেট করে লেখক পেজের URL
- */
-export function getAuthorUrl(slug: string): string {
-    const cleanSlug = slugify(slug || 'editorial-team');
-    return `${siteConfig.url}/author/${cleanSlug}`;
-}
+    const cleanCategory = catSlug
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
 
-/**
- * জেনারেট করে স্ট্যাটিক পেজের URL
- */
-export function getStaticUrl(path: string): string {
-    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-    return `${siteConfig.url}/${cleanPath}`;
+    return `/news/category/${cleanCategory || 'general'}`;
 }
