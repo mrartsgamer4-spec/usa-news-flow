@@ -8,12 +8,12 @@ import { getArticleUrl, getCategoryUrl } from '@/lib/urls';
 import { Clock } from 'lucide-react';
 
 interface CategoryPageProps {
-    params: {
+    params: Promise<{
         category: string;
-    };
-    searchParams?: {
+    }>;
+    searchParams?: Promise<{
         sub?: string;
-    };
+    }>;
 }
 
 function formatCategoryTitle(slug: string): string {
@@ -71,7 +71,8 @@ async function getCategoryArticles(categorySlug: string, subCategory?: string) {
 }
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
-    const categorySlug = params?.category || '';
+    const resolvedParams = await params;
+    const categorySlug = resolvedParams?.category || '';
     const title = formatCategoryTitle(categorySlug);
 
     return {
@@ -84,8 +85,11 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 }
 
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
-    const categorySlug = params?.category || '';
-    const subCategory = searchParams?.sub;
+    const resolvedParams = await params;
+    const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+    const categorySlug = resolvedParams?.category || '';
+    const subCategory = resolvedSearchParams?.sub;
     const articles = await getCategoryArticles(categorySlug, subCategory);
     const categoryTitle = formatCategoryTitle(categorySlug);
 

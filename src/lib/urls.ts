@@ -20,7 +20,6 @@ export function getArticleUrl(category: any, slug: string): string {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
 
-    // কোনো ডোমেন বা .com ছাড়া সরাসরি ইন্টারনাল পাথ
     return `/news/${cleanCategory || 'general'}/${cleanSlug}`;
 }
 
@@ -40,4 +39,15 @@ export function getCategoryUrl(category: any): string {
         .replace(/^-+|-+$/g, '');
 
     return `/news/category/${cleanCategory || 'general'}`;
+}
+
+export function getAuthorUrl(slug: string): string {
+    const cleanSlug = (slug || '')
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    return `/author/${cleanSlug || 'editorial-staff'}`;
 }
