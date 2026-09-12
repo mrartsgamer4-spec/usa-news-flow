@@ -38,7 +38,8 @@ async function getCategoryArticles(categorySlug: string, subCategory?: string) {
         if (!db) db = (process.env as any).DB;
         if (!db) return [];
 
-        const cleanCat = categorySlug.replace(/[-_.]/g, '%');
+        // ইউআরএল স্লাগ ও স্পেস হ্যান্ডেল করার ক্লিন কি-ওয়ার্ড
+        const cleanCat = decodeURIComponent(categorySlug).replace(/[-_.]/g, '%').trim();
 
         let query = `
             SELECT * FROM articles 
@@ -50,18 +51,18 @@ async function getCategoryArticles(categorySlug: string, subCategory?: string) {
         const params: any[] = [`%${cleanCat}%`, `%${cleanCat}%`];
 
         if (subCategory && subCategory.trim() !== '') {
-            const cleanSub = subCategory.replace(/[-_]/g, ' ').trim();
+            const cleanSub = decodeURIComponent(subCategory).replace(/[-_]/g, ' ').trim();
             const wildcardSub = `%${cleanSub.replace(/\s+/g, '%')}%`;
 
+            // D1-এ sub_category কলাম মিসিং থাকলেও কোনো এরর হবে না
             query += `
                 AND (
-                    (sub_category IS NOT NULL AND LOWER(sub_category) LIKE LOWER(?))
-                    OR (subcategory IS NOT NULL AND LOWER(subcategory) LIKE LOWER(?))
-                    OR (tags IS NOT NULL AND LOWER(tags) LIKE LOWER(?))
-                    OR (title IS NOT NULL AND LOWER(title) LIKE LOWER(?))
+                    LOWER(tags) LIKE LOWER(?)
+                    OR LOWER(tags) LIKE LOWER(?)
+                    OR LOWER(title) LIKE LOWER(?)
                 )
             `;
-            params.push(wildcardSub, wildcardSub, wildcardSub, `%${cleanSub}%`);
+            params.push(wildcardSub, `%${cleanSub}%`, `%${cleanSub}%`);
         }
 
         query += ' ORDER BY created_at DESC LIMIT 50';
@@ -81,8 +82,8 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
     const categorySlug = resolvedParams?.category || '';
     const sub = resolvedSearchParams?.sub;
 
-    const baseTitle = categorySlug.replace(/[-_]/g, ' ').toUpperCase();
-    const title = sub ? `${sub.replace(/[-_]/g, ' ').toUpperCase()} - ${baseTitle}` : baseTitle;
+    const baseTitle = decodeURIComponent(categorySlug).replace(/[-_]/g, ' ').toUpperCase();
+    const title = sub ? `${decodeURIComponent(sub).replace(/[-_]/g, ' ').toUpperCase()} - ${baseTitle}` : baseTitle;
 
     return {
         title: `${title} News | ${siteConfig.name}`,
@@ -100,8 +101,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     const categorySlug = resolvedParams?.category || '';
     const subCategory = resolvedSearchParams?.sub;
     const articles = await getCategoryArticles(categorySlug, subCategory);
-    const categoryTitle = categorySlug.replace(/[-_]/g, ' ');
-    const displaySubTitle = subCategory ? subCategory.replace(/[-_]/g, ' ') : null;
+    const categoryTitle = decodeURIComponent(categorySlug).replace(/[-_]/g, ' ');
+    const displaySubTitle = subCategory ? decodeURIComponent(subCategory).replace(/[-_]/g, ' ') : null;
 
     return (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">

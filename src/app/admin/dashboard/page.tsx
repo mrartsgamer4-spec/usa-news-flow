@@ -87,6 +87,7 @@ export default function AdminDashboard() {
         setContent('');
         setTags('');
         setSubCategory('');
+        setCategory('U.S. News');
     };
 
     const handleEdit = (article: any) => {
@@ -94,7 +95,9 @@ export default function AdminDashboard() {
         setTitle(article.title || '');
         setSlug(article.slug || '');
         setCategory(article.category || 'U.S. News');
-        setReporterName(article.author_name || '');
+        // সাব-ক্যাটাগরি রিস্টোর করা (উভয় ফিল্ড নেম সাপোর্ট করা হয়েছে)
+        setSubCategory(article.sub_category || article.subcategory || '');
+        setReporterName(article.author_name || article.reporter_name || '');
         setFeaturedImage(article.featured_image || '');
         setImageAlt(article.image_alt || '');
         setExcerpt(article.excerpt || '');
@@ -136,7 +139,9 @@ export default function AdminDashboard() {
             slug,
             category,
             sub_category: subCategory,
+            subcategory: subCategory, // উভয় ফরম্যাট যাতে ব্যাকএন্ড যেকোনো একটায় পেলে পায়
             reporter_name: reporterName,
+            author_name: reporterName,
             featured_image: featuredImage,
             image_alt: imageAlt || title,
             excerpt,
@@ -171,7 +176,7 @@ export default function AdminDashboard() {
         }
     };
 
-    const currentSubs = CATEGORY_LIST.find(c => c.name === category)?.subs || [];
+    const currentSubs = CATEGORY_LIST.find(c => c.name.toLowerCase() === category.toLowerCase())?.subs || [];
 
     return (
         <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
@@ -382,18 +387,23 @@ export default function AdminDashboard() {
                                             <span className="text-[10px] font-black text-[#cc0000] uppercase bg-red-50 px-2 py-0.5 rounded">
                                                 {item.category}
                                             </span>
+                                            {(item.sub_category || item.subcategory) && (
+                                                <span className="text-[10px] font-black text-gray-600 uppercase bg-gray-100 px-2 py-0.5 rounded">
+                                                    {item.sub_category || item.subcategory}
+                                                </span>
+                                            )}
                                         </div>
                                         <h3 className="font-bold text-sm sm:text-base text-gray-900 leading-snug">
                                             {item.title}
                                         </h3>
                                         <div className="text-xs text-gray-400 mt-1 flex flex-wrap gap-4">
-                                            <span>Author: <strong className="text-gray-700">{item.author_name || 'N/A'}</strong></span>
+                                            <span>Author: <strong className="text-gray-700">{item.author_name || item.reporter_name || 'N/A'}</strong></span>
                                             <span>Date: {new Date(item.created_at || Date.now()).toLocaleDateString()}</span>
                                             {item.tags && <span>Tags: <em>{item.tags}</em></span>}
                                         </div>
                                     </div>
 
-                                    {/* Action Buttons: View, Edit, Delete */}
+                                    {/* Action Buttons */}
                                     <div className="flex items-center gap-2">
                                         <Link
                                             href={`/news/article/${item.slug}`}

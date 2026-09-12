@@ -56,20 +56,32 @@ async function fetchArticle(slug: string) {
     }
 }
 
+// আর্টিকেলের সংখ্যা কম হলেও যেন Most Popular ও Up Next ফাঁকা না থাকে
 async function fetchCnnFeed(currentId: string) {
     try {
         const db = getDb();
         if (!db) return { upNext: [], mostPopular: [] };
 
         const { results } = await db
-            .prepare('SELECT * FROM articles WHERE id != ? ORDER BY created_at DESC LIMIT 13')
+            .prepare('SELECT * FROM articles WHERE id != ? ORDER BY created_at DESC LIMIT 20')
             .bind(currentId)
             .all();
 
         const all = results || [];
+        if (all.length === 0) return { upNext: [], mostPopular: [] };
+
+        // যদি ডাটাবেজে মাত্র ৩-৪টি নিউজ থাকে, তাহলেও যেন Most Popular-এ ওল্ড নিউজ শো করে
+        const upNext = all.slice(0, 6);
+        let mostPopular = all.slice(6, 12);
+
+        if (mostPopular.length === 0) {
+            // ৬টির কম নিউজ থাকলে রিভার্স অর্ডারে মোস্ট পপুলারে ওল্ড নিউজ দেখানো হবে
+            mostPopular = [...all].reverse();
+        }
+
         return {
-            upNext: all.slice(0, 6),
-            mostPopular: all.slice(6, 13),
+            upNext,
+            mostPopular,
         };
     } catch (e) {
         return { upNext: [], mostPopular: [] };
@@ -129,7 +141,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     const baseUrl = siteConfig.url.replace(/\/+$/, '');
     const currentUrl = `${baseUrl}${getArticleUrl(article.category, article.slug)}`;
 
-    // গুগল নিউজের জন্য NewsArticle Schema
     const newsArticleJsonLd = {
         '@context': 'https://schema.org',
         '@type': 'NewsArticle',
@@ -248,41 +259,49 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                         <h2 className="text-xl sm:text-2xl font-black text-[#0c0c0c] tracking-tight uppercase border-b-2 border-black pb-2">
                             Up next
                         </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                            {upNext.map((item: any) => (
-                                <Link key={item.id} href={getArticleUrl(item.category, item.slug)} prefetch={false} className="group flex flex-col justify-between">
-                                    <div>
-                                        <div className="h-32 w-full rounded-md overflow-hidden bg-gray-100 mb-2.5">
-                                            <img src={item.featured_image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=400&q=80'} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                        {upNext.length === 0 ? (
+                            <p className="text-sm text-gray-500 italic">No more stories in up next.</p>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                                {upNext.map((item: any) => (
+                                    <Link key={item.id} href={getArticleUrl(item.category, item.slug)} prefetch={false} className="group flex flex-col justify-between">
+                                        <div>
+                                            <div className="h-32 w-full rounded-md overflow-hidden bg-gray-100 mb-2.5">
+                                                <img src={item.featured_image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=400&q=80'} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                                            </div>
+                                            <h3 className="text-[14px] font-bold text-gray-900 group-hover:text-[#cc0000] line-clamp-2 leading-snug">
+                                                {item.title}
+                                            </h3>
                                         </div>
-                                        <h3 className="text-[14px] font-bold text-gray-900 group-hover:text-[#cc0000] line-clamp-2 leading-snug">
-                                            {item.title}
-                                        </h3>
-                                    </div>
-                                    <span className="text-[11px] font-bold text-gray-400 mt-2 block tracking-wider uppercase">
-                                        {timeAgo(item.created_at)}
-                                    </span>
-                                </Link>
-                            ))}
-                        </div>
+                                        <span className="text-[11px] font-bold text-gray-400 mt-2 block tracking-wider uppercase">
+                                            {timeAgo(item.created_at)}
+                                        </span>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <div className="lg:col-span-4 space-y-6">
                         <h2 className="text-xl sm:text-2xl font-black text-[#0c0c0c] tracking-tight uppercase border-b-2 border-black pb-2">
                             Most popular
                         </h2>
-                        <div className="space-y-4">
-                            {mostPopular.map((item: any, idx: number) => (
-                                <Link key={item.id} href={getArticleUrl(item.category, item.slug)} prefetch={false} className="group flex items-start gap-4 pb-3 border-b border-gray-100 last:border-0">
-                                    <span className="text-2xl sm:text-3xl font-black text-gray-900 leading-none shrink-0 w-6">
-                                        {idx + 1}
-                                    </span>
-                                    <h3 className="text-[14px] font-bold text-gray-800 group-hover:text-[#cc0000] line-clamp-2 leading-snug">
-                                        {item.title}
-                                    </h3>
-                                </Link>
-                            ))}
-                        </div>
+                        {mostPopular.length === 0 ? (
+                            <p className="text-sm text-gray-500 italic">No popular stories yet.</p>
+                        ) : (
+                            <div className="space-y-4">
+                                {mostPopular.map((item: any, idx: number) => (
+                                    <Link key={item.id} href={getArticleUrl(item.category, item.slug)} prefetch={false} className="group flex items-start gap-4 pb-3 border-b border-gray-100 last:border-0">
+                                        <span className="text-2xl sm:text-3xl font-black text-gray-900 leading-none shrink-0 w-6">
+                                            {idx + 1}
+                                        </span>
+                                        <h3 className="text-[14px] font-bold text-gray-800 group-hover:text-[#cc0000] line-clamp-2 leading-snug">
+                                            {item.title}
+                                        </h3>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>

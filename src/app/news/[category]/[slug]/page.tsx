@@ -8,7 +8,7 @@ import { Clock, User, Calendar, Tag } from 'lucide-react';
 
 interface ArticlePageProps {
     params: Promise<{
-        category: string;
+        category?: string;
         slug: string;
     }>;
 }
@@ -23,8 +23,16 @@ async function getArticle(slug: string) {
         if (!db) db = (process.env as any).DB;
         if (!db) return null;
 
-        const stmt = db.prepare('SELECT * FROM articles WHERE slug = ? LIMIT 1');
-        const article = await stmt.bind(slug).first();
+        const rawSlug = (slug || '').trim();
+        const decodedSlug = decodeURIComponent(rawSlug).trim();
+
+        // ডিকোড করা স্লাগ এবং কেস-ইনসেনসিটিভ চেক
+        const stmt = db.prepare(`
+            SELECT * FROM articles 
+            WHERE slug = ? OR slug = ? OR LOWER(slug) = LOWER(?) 
+            LIMIT 1
+        `);
+        const article = await stmt.bind(rawSlug, decodedSlug, decodedSlug).first();
         return article || null;
     } catch (e) {
         console.error('Error fetching single article from D1:', e);

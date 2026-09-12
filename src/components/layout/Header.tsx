@@ -51,11 +51,11 @@ const NAVIGATION_CONFIG = [
     },
     {
         label: "Tech",
-        href: "/news/category/technology",
+        href: "/news/category/tech",
         sub: [
-            { label: "AI News", href: "/news/category/technology?sub=ai-news" },
-            { label: "Latest AI News", href: "/news/category/technology?sub=latest-ai-news" },
-            { label: "AI Technology", href: "/news/category/technology?sub=ai-technology" }
+            { label: "AI News", href: "/news/category/tech?sub=ai-news" },
+            { label: "Latest AI News", href: "/news/category/tech?sub=latest-ai-news" },
+            { label: "AI Technology", href: "/news/category/tech?sub=ai-technology" }
         ]
     },
     {
@@ -126,10 +126,7 @@ export default function Header() {
 
     return (
         <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-            {/* Top Bar */}
             <div className="max-w-7xl mx-auto px-4 py-2.5 sm:py-4 flex items-center justify-between">
-
-                {/* কিশোরগঞ্জ জার্নাল স্টাইল মোবাইল মেনু বাটন */}
                 <button
                     onClick={() => setMobileOpen(!mobileOpen)}
                     className="lg:hidden p-1.5 text-gray-800 hover:text-[#cc0000] focus:outline-none"
@@ -138,7 +135,6 @@ export default function Header() {
                     {mobileOpen ? <X size={26} /> : <Menu size={26} />}
                 </button>
 
-                {/* লোগো (মোবাইলে সেন্টারে থাকবে, ডেস্কটপে বামে) */}
                 <Link href="/" prefetch={false} className="flex flex-col items-center lg:items-start">
                     <div className="flex items-center text-2xl sm:text-4xl font-black tracking-tight italic">
                         <span className="bg-[#cc0000] text-white px-2 py-0.5 rounded mr-1.5 uppercase text-lg sm:text-3xl">USA</span>
@@ -150,7 +146,6 @@ export default function Header() {
                     </span>
                 </Link>
 
-                {/* ডেস্কটপ লাইভ টাইম বক্স */}
                 <div className="hidden md:flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
                     <div className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-700 bg-white">
                         <Clock size={20} />
@@ -162,7 +157,6 @@ export default function Header() {
                     </div>
                 </div>
 
-                {/* মোবাইল ডানের সার্চ আইকন ও ডেস্কটপ সোশ্যাল লিংকস */}
                 <div className="flex items-center gap-3">
                     <div className="hidden sm:flex items-center gap-2">
                         <a href="#" className="w-8 h-8 rounded-full bg-[#3b5998] text-white flex items-center justify-center text-sm font-bold shadow-sm">f</a>
@@ -176,7 +170,6 @@ export default function Header() {
                 </div>
             </div>
 
-            {/* কিশোরগঞ্জ জার্নাল স্টাইল মোবাইল লাইভ টাইম স্ট্রিপ */}
             <div className="lg:hidden bg-gray-50 border-t border-b border-gray-200 py-1.5 px-4 text-center">
                 <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-gray-700">
                     <MapPin size={13} className="text-[#cc0000] shrink-0" />
@@ -184,11 +177,8 @@ export default function Header() {
                 </div>
             </div>
 
-            {/* Red Navbar with Pure White Text */}
             <nav className="hidden lg:block bg-[#cc0000] text-white shadow-md">
                 <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
-
-                    {/* Desktop Menu */}
                     <div className="flex items-center space-x-1">
                         {NAVIGATION_CONFIG.map((item) => {
                             const isActive = item.isHome ? pathname === '/' : pathname.startsWith(item.href);
@@ -226,7 +216,6 @@ export default function Header() {
                         })}
                     </div>
 
-                    {/* Tools & Calculators */}
                     <div className="flex items-center space-x-2 py-2 pl-4 border-l border-red-400">
                         <div className="relative group">
                             <button className="px-3 py-1.5 bg-white text-gray-900 rounded font-bold text-xs uppercase flex items-center gap-1.5 hover:bg-gray-100 shadow-sm transition">
@@ -263,7 +252,6 @@ export default function Header() {
                 </div>
             </nav>
 
-            {/* Mobile Menu */}
             {mobileOpen && (
                 <div className="lg:hidden bg-[#b30000] px-4 py-3 space-y-1 border-t border-red-400 max-h-[80vh] overflow-y-auto shadow-2xl">
                     {NAVIGATION_CONFIG.map((item) => (
