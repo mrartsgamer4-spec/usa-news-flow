@@ -10,3 +10,11 @@ export function getCategoryUrl(category: string): string {
         .replace(/[\s_.]+/g, '-');
     return `/news/category/${cleanCat}`;
 }
+
+export function getAuthorUrl(authorName: string): string {
+    const cleanAuthor = (authorName || 'staff')
+        .toLowerCase()
+        .trim()
+        .replace(/[\s_.]+/g, '-');
+    return `/author/${cleanAuthor}`;
+}
