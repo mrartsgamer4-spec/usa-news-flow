@@ -1,5 +1,5 @@
 'use client';
-
+import AdsterraBanner from '@/components/ads/AdsterraBanner';
 import Link from "next/link";
 import {
     FileImage,
@@ -20,7 +20,12 @@ export default function Footer() {
     };
 
     return (
-        <footer className="bg-[#0b1321] text-gray-300 pt-12 pb-6 border-t border-gray-800 text-sm">
+        <footer className="bg-[#0b1321] text-gray-300 pt-6 pb-6 border-t border-gray-800 text-sm">
+            {/* Adsterra Banner Placement */}
+            <div className="max-w-7xl mx-auto px-4 mb-8 flex justify-center">
+                <AdsterraBanner />
+            </div>
+
             <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-10 border-b border-gray-800">
 
                 {/* Brand Column */}
@@ -129,7 +134,7 @@ export default function Footer() {
                         <li><Link href="/editorial-policy" className="hover:text-white transition">Editorial Policy</Link></li>
                         <li><Link href="/advertising-policy" className="hover:text-white transition">Advertising Policy</Link></li>
                         <li><Link href="/corrections-policy" className="hover:text-white transition">Corrections Policy</Link></li>
-                        <li><Link href="/contact" className="hover:text-white transition">contact</Link></li>
+                        <li><Link href="/contact" className="hover:text-white transition">Contact Us</Link></li>
                         <li><Link href="/sitemap.xml" target="_blank" className="hover:text-white transition">Sitemap</Link></li>
                         <li><Link href="/rss-feeds" className="hover:text-white transition">RSS Feeds</Link></li>
                     </ul>
