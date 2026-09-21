@@ -83,6 +83,15 @@ export default function RootLayout({
                 <link rel="icon" href="/icon.png?v=3" type="image/png" />
                 <link rel="shortcut icon" href="/icon.png?v=3" type="image/png" />
                 <link rel="apple-touch-icon" href="/icon.png?v=3" />
+                
+                {/* Google AdSense Script */}
+                <Script
+                    async
+                    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9525301204205101"
+                    crossOrigin="anonymous"
+                    strategy="afterInteractive"
+                />
+
                 <JsonLd data={[orgSchema, websiteSchema]} />
             </head>
             <body className="bg-gray-100 text-gray-900 min-h-screen flex flex-col antialiased text-base">
