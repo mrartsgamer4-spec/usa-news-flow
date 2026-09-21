@@ -83,13 +83,16 @@ export default function RootLayout({
                 <link rel="icon" href="/icon.png?v=3" type="image/png" />
                 <link rel="shortcut icon" href="/icon.png?v=3" type="image/png" />
                 <link rel="apple-touch-icon" href="/icon.png?v=3" />
+
+                {/* Google AdSense Meta Tag for Instant Verification */}
+                <meta name="google-adsense-account" content="ca-pub-9525301204205101" />
                 
                 {/* Google AdSense Script */}
                 <Script
                     async
                     src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9525301204205101"
                     crossOrigin="anonymous"
-                    strategy="afterInteractive"
+                    strategy="beforeInteractive"
                 />
 
                 <JsonLd data={[orgSchema, websiteSchema]} />
