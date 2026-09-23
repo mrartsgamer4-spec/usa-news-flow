@@ -144,16 +144,13 @@ export default function Footer() {
 
             {/* Bottom Bar */}
             <div className="max-w-7xl mx-auto px-4 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-4">
-                <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                <div className="flex items-center gap-6">
                     <a href="mailto:davidolive888@gmail.com" className="hover:text-white transition">
                         ✉ davidolive888@gmail.com
                     </a>
                     <a href="tel:+14387975614" className="hover:text-white transition">
                         📞 +14387975614
                     </a>
-                    <span>
-                        📍 New York City, United States
-                    </span>
                 </div>
                 <div>
                     © 2026 USA News Flow. All Rights Reserved.
