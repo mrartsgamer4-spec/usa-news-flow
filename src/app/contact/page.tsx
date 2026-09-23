@@ -18,16 +18,26 @@ export default function ContactPage() {
 
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4 max-w-xl">
                 <div>
-                    <h3 className="font-bold text-gray-900">Editorial Desk & News Tips</h3>
-                    <p className="text-sm text-gray-600">contact@usanewsflow.com</p>
+                    <h3 className="font-bold text-gray-900">Editorial Desk & Inquiries</h3>
+                    <p className="text-sm text-gray-600">
+                        <a href="mailto:davidolive888@gmail.com" className="hover:underline">
+                            davidolive888@gmail.com
+                        </a>
+                    </p>
                 </div>
                 <div>
-                    <h3 className="font-bold text-gray-900">Corrections & Feedback</h3>
-                    <p className="text-sm text-gray-600">corrections@usanewsflow.com</p>
+                    <h3 className="font-bold text-gray-900">Phone</h3>
+                    <p className="text-sm text-gray-600">
+                        <a href="tel:+14387975614" className="hover:underline">
+                            +14387975614
+                        </a>
+                    </p>
                 </div>
                 <div>
-                    <h3 className="font-bold text-gray-900">Media & Business Inquiries</h3>
-                    <p className="text-sm text-gray-600">publisher@usanewsflow.com</p>
+                    <h3 className="font-bold text-gray-900">Address</h3>
+                    <p className="text-sm text-gray-600">
+                        New York City, United States
+                    </p>
                 </div>
             </div>
         </main>
