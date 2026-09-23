@@ -10,21 +10,13 @@ export default function GlobalError({
     reset: () => void;
 }) {
     return (
-        <html>
-            <body>
-                <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'sans-serif' }}>
-                    <h2>Something went wrong!</h2>
+        <html lang="en">
+            <body className="min-h-screen bg-gray-100 flex flex-col items-center justify-center text-center px-4">
+                <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong!</h2>
                     <button
                         onClick={() => reset()}
-                        style={{
-                            padding: '10px 20px',
-                            marginTop: '20px',
-                            backgroundColor: '#dc2626',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
+                        className="px-6 py-2.5 bg-red-600 text-white font-semibold rounded hover:bg-red-700 transition"
                     >
                         Try again
                     </button>
