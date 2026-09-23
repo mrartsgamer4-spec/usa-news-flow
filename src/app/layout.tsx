@@ -7,9 +7,6 @@ import Footer from '@/components/layout/Footer';
 import { generateOrganizationSchema, generateWebSiteSchema } from '@/lib/seoSchemas';
 import JsonLd from '@/components/seo/JsonLd';
 
-// Cloudflare Pages build fix
-export const runtime = 'edge';
-
 export const viewport: Viewport = {
     width: 'device-width',
     initialScale: 1,
