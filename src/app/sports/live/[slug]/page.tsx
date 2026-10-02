@@ -1,15 +1,18 @@
 'use client';
 
+import { use } from 'react';
 import Link from 'next/link';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default function DynamicMatchPage({ params }: PageProps) {
-  const matchSlug = params.slug;
+  // Next.js 15/16 এর জন্য use() হুক দিয়ে Promise Unwrap করা
+  const resolvedParams = use(params);
+  const matchSlug = resolvedParams.slug;
 
   // স্লাগ থেকে ম্যাচের নাম সুন্দর করে দেখানোর জন্য
   const matchTitle = matchSlug
