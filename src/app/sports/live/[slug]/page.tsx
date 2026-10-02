@@ -3,7 +3,7 @@
 import { use } from 'react';
 import Link from 'next/link';
 
-// Cloudflare Pages এর জন্য Edge Runtime কনফিগারেশন
+// Cloudflare Pages Edge Runtime Config
 export const runtime = 'edge';
 
 interface PageProps {
@@ -13,11 +13,9 @@ interface PageProps {
 }
 
 export default function DynamicMatchPage({ params }: PageProps) {
-  // Next.js 15/16 এর জন্য use() hook
   const resolvedParams = use(params);
   const matchSlug = resolvedParams.slug;
 
-  // স্লাগ থেকে ম্যাচের নাম সুন্দর করে দেখানোর জন্য
   const matchTitle = matchSlug
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -54,12 +52,12 @@ export default function DynamicMatchPage({ params }: PageProps) {
         </p>
       </div>
 
-      {/* লাইভ স্কোর উইজেট */}
+      {/* রিয়েল-টাইম নিশ্চিত লাইভ স্কোর উইজেট (ScoreBat) */}
       <div className="bg-white rounded-xl border border-gray-200 p-2 shadow-sm mb-8 overflow-hidden">
         <iframe
-          src="https://www.scoreaxis.com/widget/live-scores?autoHeight=0&font=Helvetica"
-          className="w-full h-[550px] border-0 rounded-md"
-          title={`${matchTitle} Live Score`}
+          src="https://www.scorebat.com/embed/livescore/"
+          className="w-full h-[650px] border-0 rounded-md"
+          title={`${matchTitle} Live Score Center`}
           loading="lazy"
         />
       </div>
