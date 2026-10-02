@@ -1,9 +1,8 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect } from 'react';
 import Link from 'next/link';
 
-// Cloudflare Pages Edge Runtime Config
 export const runtime = 'edge';
 
 interface PageProps {
@@ -21,9 +20,37 @@ export default function DynamicMatchPage({ params }: PageProps) {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
+  useEffect(() => {
+    const container = document.getElementById('specific-match-widget');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const widgetDiv = document.createElement('div');
+    widgetDiv.id = 'widget-3kcvmur7ewbk';
+    widgetDiv.className = 'scoreaxis-widget';
+    widgetDiv.style.cssText =
+      'width: auto; height: auto; font-size: 14px; background-color: #ffffff; color: #141416; border: 1px solid #ecf1f7; overflow: auto;';
+
+    const script = document.createElement('script');
+    script.src =
+      'https://widgets.scoreaxis.com/api/football/live-match/6a6d3a8951fdd6f30e0dc946?widgetId=3kcvmur7ewbk&lang=en&lineupsBlock=1&eventsBlock=1&statsBlock=1&links=1&noFollowLinks=0&font=heebo&fontSize=14&rowDensity=100&widgetWidth=auto&widgetHeight=auto&bodyColor=%23ffffff&textColor=%23141416&linkColor=%23141416&borderColor=%23ecf1f7&tabColor=%23f3f8fd';
+    script.async = true;
+
+    const linkDiv = document.createElement('div');
+    linkDiv.className = 'widget-main-link';
+    linkDiv.style.cssText = 'padding: 6px 12px; font-weight: 500;';
+    linkDiv.innerHTML =
+      'Live data by <a href="https://www.scoreaxis.com/" style="color: inherit;" target="_blank" rel="noopener noreferrer">Scoreaxis</a>';
+
+    widgetDiv.appendChild(script);
+    widgetDiv.appendChild(linkDiv);
+    container.appendChild(widgetDiv);
+  }, [matchSlug]);
+
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
-      {/* ব্যাক নেভিগেশন */}
+      {/* Back button */}
       <div className="mb-6">
         <Link
           href="/news/category/sports"
@@ -33,7 +60,7 @@ export default function DynamicMatchPage({ params }: PageProps) {
         </Link>
       </div>
 
-      {/* ম্যাচ হেডার সেকশন */}
+      {/* Match Header */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
           <span className="relative flex h-3 w-3">
@@ -52,17 +79,12 @@ export default function DynamicMatchPage({ params }: PageProps) {
         </p>
       </div>
 
-      {/* রিয়েল-টাইম নিশ্চিত লাইভ স্কোর উইজেট (ScoreBat) */}
-      <div className="bg-white rounded-xl border border-gray-200 p-2 shadow-sm mb-8 overflow-hidden">
-        <iframe
-          src="https://www.scorebat.com/embed/livescore/"
-          className="w-full h-[650px] border-0 rounded-md"
-          title={`${matchTitle} Live Score Center`}
-          loading="lazy"
-        />
+      {/* Specific Match Widget Container */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-8">
+        <div id="specific-match-widget" className="w-full min-h-[300px]" />
       </div>
 
-      {/* অ্যাডসেন্স এবং এসইও কন্টেন্ট */}
+      {/* SEO/AdSense Content */}
       <div className="bg-gray-50 rounded-xl border border-gray-200 p-6 text-gray-700 text-sm leading-relaxed space-y-4">
         <h2 className="text-lg font-bold text-gray-800">
           About {matchTitle} Live Coverage
