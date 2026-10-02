@@ -3,6 +3,9 @@
 import { use } from 'react';
 import Link from 'next/link';
 
+// Cloudflare Pages এর জন্য Edge Runtime কনফিগারেশন
+export const runtime = 'edge';
+
 interface PageProps {
   params: Promise<{
     slug: string;
@@ -10,7 +13,7 @@ interface PageProps {
 }
 
 export default function DynamicMatchPage({ params }: PageProps) {
-  // Next.js 15/16 এর জন্য use() হুক দিয়ে Promise Unwrap করা
+  // Next.js 15/16 এর জন্য use() hook
   const resolvedParams = use(params);
   const matchSlug = resolvedParams.slug;
 
