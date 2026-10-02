@@ -1,25 +1,11 @@
 'use client';
 
-import { use, useEffect } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 
 export const runtime = 'edge';
 
-interface PageProps {
-  params: Promise<{
-    slug: string;
-  }>;
-}
-
-export default function DynamicMatchPage({ params }: PageProps) {
-  const resolvedParams = use(params);
-  const matchSlug = resolvedParams.slug;
-
-  const matchTitle = matchSlug
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-
+export default function DynamicMatchPage() {
   useEffect(() => {
     const container = document.getElementById('specific-match-widget');
     if (!container) return;
@@ -46,11 +32,11 @@ export default function DynamicMatchPage({ params }: PageProps) {
     widgetDiv.appendChild(script);
     widgetDiv.appendChild(linkDiv);
     container.appendChild(widgetDiv);
-  }, [matchSlug]);
+  }, []);
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
-      {/* Back button */}
+      {/* ব্যাক বাটন */}
       <div className="mb-6">
         <Link
           href="/news/category/sports"
@@ -60,7 +46,7 @@ export default function DynamicMatchPage({ params }: PageProps) {
         </Link>
       </div>
 
-      {/* Match Header */}
+      {/* হেডার সেকশন */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
           <span className="relative flex h-3 w-3">
@@ -72,28 +58,25 @@ export default function DynamicMatchPage({ params }: PageProps) {
           </span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-2">
-          {matchTitle} Live Score & Updates
+          Live Match Score & Coverage
         </h1>
         <p className="text-gray-600 text-sm">
-          Real-time commentary, scoreline, team stats, and instant match updates for {matchTitle}.
+          Real-time commentary, scoreline, team stats, and instant match updates.
         </p>
       </div>
 
-      {/* Specific Match Widget Container */}
+      {/* কাস্টম স্কোরঅ্যাক্সিস উইজেট */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-8">
         <div id="specific-match-widget" className="w-full min-h-[300px]" />
       </div>
 
-      {/* SEO/AdSense Content */}
+      {/* এসইও / কন্টেন্ট */}
       <div className="bg-gray-50 rounded-xl border border-gray-200 p-6 text-gray-700 text-sm leading-relaxed space-y-4">
         <h2 className="text-lg font-bold text-gray-800">
-          About {matchTitle} Live Coverage
+          About Live Sports Coverage
         </h2>
         <p>
-          Welcome to USA News Flow live coverage of {matchTitle}. Stay tuned for live minute-by-minute updates, goals, possession stats, and key match highlights as they unfold in real time.
-        </p>
-        <p>
-          Our live sports center aggregates instant data to keep fans updated with accurate scoreboards, tournament rankings, and fixtures across major worldwide sports events.
+          Welcome to USA News Flow live match center. Stay tuned for real-time scores, team lineups, match events, and statistics.
         </p>
       </div>
     </main>
