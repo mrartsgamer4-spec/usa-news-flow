@@ -17,12 +17,12 @@ export default function LiveScore() {
         <span className="text-xs text-gray-400 font-medium">Real-time Updates</span>
       </div>
 
-      {/* ফ্রি স্পোর্টস উইজেট (Sofascore) */}
+      {/* ফ্রি স্পোর্টস উইজেট (Sofascore Official Embed) */}
       <div className="w-full overflow-hidden rounded-lg min-h-[400px]">
         <iframe
           id="sofascore-embed-widget"
-          src="https://www.sofascore.com/embed/unique-tournament/7/season/52571/widget"
-          className="w-full h-[420px] border-0 rounded-md"
+          src="https://widgets.sofascore.com/embed/unique-tournament/7/season/52571/widget"
+          className="w-full h-[450px] border-0 rounded-md"
           title="Live Sports Score"
           loading="lazy"
         />
