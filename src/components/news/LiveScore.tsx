@@ -3,7 +3,7 @@
 export default function LiveScore() {
   return (
     <div className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-4 my-6">
-      {/* হেডার সেকশন */}
+      {/* Header Section */}
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
@@ -17,11 +17,10 @@ export default function LiveScore() {
         <span className="text-xs text-gray-400 font-medium">Real-time Updates</span>
       </div>
 
-      {/* সোফাস্কোর গ্লোবাল ফ্রি উইজেট */}
+      {/* ScoreAxis Free Widget */}
       <div className="w-full overflow-hidden rounded-lg min-h-[450px]">
         <iframe
-          id="sofascore-embed-widget"
-          src="https://widgets.sofascore.com/embed/"
+          src="https://www.scoreaxis.com/widget/live-scores?autoHeight=0&font=Helvetica"
           className="w-full h-[500px] border-0 rounded-md"
           title="Live Sports Score"
           loading="lazy"
