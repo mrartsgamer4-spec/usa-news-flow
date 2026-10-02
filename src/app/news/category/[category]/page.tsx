@@ -6,6 +6,7 @@ import { getRequestContext } from '@cloudflare/next-on-pages';
 import { siteConfig } from '@/lib/siteConfig';
 import { getArticleUrl, getCategoryUrl } from '@/lib/urls';
 import { Clock, User } from 'lucide-react';
+import LiveScore from '@/components/news/LiveScore';
 
 interface CategoryPageProps {
     params: Promise<{
@@ -118,6 +119,9 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                 </h1>
                 <span className="text-xs font-bold text-gray-500 uppercase">{articles.length} Articles</span>
             </div>
+
+            {/* শুধু স্পোর্টস ক্যাটাগরিতে লাইভ স্কোর দেখাবে */}
+            {categorySlug.toLowerCase() === 'sports' && <LiveScore />}
 
             {articles.length === 0 ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-12 text-center my-6">
