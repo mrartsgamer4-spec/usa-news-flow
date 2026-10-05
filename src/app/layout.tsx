@@ -96,6 +96,10 @@ export default function RootLayout({
                 />
 
                 <JsonLd data={[orgSchema, websiteSchema]} />
+                <Script
+            src="https://pl31333704.profitableratecpmnetwork.com/60/58/bf/6058bfbb4ceef2ce853f3bd90dd4def9.js"
+            strategy="afterInteractive"
+          />
             </head>
             <body className="bg-gray-100 text-gray-900 min-h-screen flex flex-col antialiased text-base">
                 {/* Google Analytics (gtag.js) */}
