@@ -36,7 +36,8 @@ function getCatName(cat: any): string {
 }
 
 export default async function Home() {
-    const rawArticles = (await getPublishedArticles()) || [];
+    // ৫০টি পর্যন্ত নিউজ ফ্যাচ করা হচ্ছে যাতে পুরানো ক্যাটাগরির নিউজগুলো মিস না হয়
+    const rawArticles = (await getPublishedArticles(50)) || [];
 
     const dummyArticles = [
         {
@@ -286,7 +287,7 @@ export default async function Home() {
                 </div>
             </section>
 
-            {/* ৩. কিশোরগঞ্জ জার্নাল স্টাইল ক্যাটাগরি গ্রিড (ফুটারে যাওয়ার আগে) */}
+            {/* ৩. ক্যাটাগরি গ্রিড */}
             <div className="space-y-12 pt-6 border-t border-gray-200">
                 {HOMEPAGE_CATEGORIES.map((cat) => {
                     let catArticles = articles.filter((a: any) => {
@@ -295,9 +296,10 @@ export default async function Home() {
                         return rawCat.includes(target) || target.includes(rawCat);
                     });
 
-                    // যদি নির্দিষ্ট ক্যাটাগরিতে ৭২ ঘণ্টার ফিল্টারের কারণে ডাটা না মেলে, তবে ফাঁকা না রেখে ব্যাকআপ ডাটা দেখাবে
-                    if (catArticles.length === 0) {
-                        catArticles = articles.slice(0, 4);
+                    // যদি নির্দিষ্ট ক্যাটাগরিতে সংবাদ কম থাকে, তবে ব্যাকআপ ডাটা দেখাবে যাতে ৪টি করে ঘর পূরণ থাকে
+                    if (catArticles.length < 4) {
+                        const remaining = articles.filter((a: any) => !catArticles.includes(a));
+                        catArticles = [...catArticles, ...remaining].slice(0, 4);
                     } else {
                         catArticles = catArticles.slice(0, 4);
                     }
