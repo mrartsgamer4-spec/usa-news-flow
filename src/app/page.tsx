@@ -36,8 +36,7 @@ function getCatName(cat: any): string {
 }
 
 export default async function Home() {
-    // ৫০টি পর্যন্ত নিউজ ফ্যাচ করা হচ্ছে যাতে পুরানো ক্যাটাগরির নিউজগুলো মিস না হয়
-    const rawArticles = (await getPublishedArticles(50)) || [];
+    const rawArticles = (await getPublishedArticles()) || [];
 
     const dummyArticles = [
         {
@@ -129,7 +128,7 @@ export default async function Home() {
 
                 {/* মাঝের ৪টি লম্বা কার্ড */}
                 <div className="lg:col-span-4 flex flex-col gap-4">
-                    {middleFeatures.map((item) => (
+                    {middleFeatures.map((item: any) => (
                         <Link
                             key={item.id}
                             href={getArticleUrl(getCatName(item.category), item.slug)}
@@ -166,7 +165,7 @@ export default async function Home() {
                             </span>
                         </div>
                         <div className="divide-y divide-gray-100">
-                            {breakingNews.map((item, idx) => (
+                            {breakingNews.map((item: any, idx: number) => (
                                 <Link
                                     key={idx}
                                     href={getArticleUrl(getCatName(item.category), item.slug)}
@@ -219,7 +218,7 @@ export default async function Home() {
                         <h2 className="text-xl font-black text-gray-900 uppercase tracking-wide">Top Stories</h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                        {topStories.map((item) => (
+                        {topStories.map((item: any) => (
                             <Link
                                 key={item.id}
                                 href={getArticleUrl(getCatName(item.category), item.slug)}
@@ -255,7 +254,7 @@ export default async function Home() {
                         </h2>
                     </div>
                     <div className="space-y-4">
-                        {popularArticles.map((item, idx) => (
+                        {popularArticles.map((item: any, idx: number) => (
                             <Link
                                 key={item.id}
                                 href={getArticleUrl(getCatName(item.category), item.slug)}
@@ -287,7 +286,7 @@ export default async function Home() {
                 </div>
             </section>
 
-            {/* ৩. ক্যাটাগরি গ্রিড */}
+            {/* ৩. ক্যাটাগরি গ্রিড (ক্যাটাগরির ব্যাকআপ নিউজসহ) */}
             <div className="space-y-12 pt-6 border-t border-gray-200">
                 {HOMEPAGE_CATEGORIES.map((cat) => {
                     let catArticles = articles.filter((a: any) => {
@@ -296,7 +295,7 @@ export default async function Home() {
                         return rawCat.includes(target) || target.includes(rawCat);
                     });
 
-                    // যদি নির্দিষ্ট ক্যাটাগরিতে সংবাদ কম থাকে, তবে ব্যাকআপ ডাটা দেখাবে যাতে ৪টি করে ঘর পূরণ থাকে
+                    // যদি নির্দিষ্ট ক্যাটাগরিতে সংবাদ কম থাকে, তবে সুন্দরভাবে ফাঁকা ঘরগুলো পূরণ রাখবে
                     if (catArticles.length < 4) {
                         const remaining = articles.filter((a: any) => !catArticles.includes(a));
                         catArticles = [...catArticles, ...remaining].slice(0, 4);
