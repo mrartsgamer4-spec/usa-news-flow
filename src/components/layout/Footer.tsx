@@ -145,11 +145,11 @@ export default function Footer() {
             {/* Bottom Bar */}
             <div className="max-w-7xl mx-auto px-4 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-4">
                 <div className="flex items-center gap-6">
-                    <a href="mailto:contact@usanewsflow.com" className="hover:text-white transition">
-                        ✉ contact@usanewsflow.com
+                    <a href="mailto:davidolive888@gmail.com" className="hover:text-white transition">
+                        ✉ davidolive888@gmail.com
                     </a>
-                    <a href="tel:+12125550198" className="hover:text-white transition">
-                        📞 +1 (212) 555-0198
+                    <a href="+14692466072" className="hover:text-white transition">
+                        📞 +1 4692466072
                     </a>
                 </div>
                 <div>
