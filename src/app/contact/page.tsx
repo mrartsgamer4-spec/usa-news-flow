@@ -21,8 +21,8 @@ export default function ContactPage() {
 
             <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg space-y-4">
                 <div>
-                    <h2 className="font-bold text-gray-900">Editorial & Newsroom</h2>
-                    <p className="text-sm text-gray-600">contact@usanewsflow.com</p>
+                    <h2 className="font-bold text-gray-900">Editorial & Newsroom New York</h2>
+                    <p className="text-sm text-gray-600">davidolive888@gmail.com</p>
                 </div>
                 <div>
                     <h2 className="font-bold text-gray-900">Website</h2>
