@@ -286,22 +286,17 @@ export default async function Home() {
                 </div>
             </section>
 
-            {/* ৩. ক্যাটাগরি গ্রিড (ক্যাটাগরির ব্যাকআপ নিউজসহ) */}
+            {/* ৩. ক্যাটাগরি গ্রিড (একদম নিখুঁত ফিল্টারিং - ক্যাটাগরি মিসম্যাচ হবে না) */}
             <div className="space-y-12 pt-6 border-t border-gray-200">
                 {HOMEPAGE_CATEGORIES.map((cat) => {
-                    let catArticles = articles.filter((a: any) => {
+                    const catArticles = articles.filter((a: any) => {
                         const rawCat = (getCatName(a.category) || '').toLowerCase().replace(/[^a-z0-9]/g, '');
                         const target = cat.slug.toLowerCase().replace(/[^a-z0-9]/g, '');
                         return rawCat.includes(target) || target.includes(rawCat);
-                    });
+                    }).slice(0, 4);
 
-                    // যদি নির্দিষ্ট ক্যাটাগরিতে সংবাদ কম থাকে, তবে সুন্দরভাবে ফাঁকা ঘরগুলো পূরণ রাখবে
-                    if (catArticles.length < 4) {
-                        const remaining = articles.filter((a: any) => !catArticles.includes(a));
-                        catArticles = [...catArticles, ...remaining].slice(0, 4);
-                    } else {
-                        catArticles = catArticles.slice(0, 4);
-                    }
+                    // ক্যাটাগরিতে খবর না থাকলে তা ব্ল্যাঙ্ক রাখবে, অন্য খবরের সাথে মেশাবে না
+                    if (catArticles.length === 0) return null;
 
                     return (
                         <section key={cat.slug} className="space-y-4">
