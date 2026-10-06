@@ -113,11 +113,6 @@ export default function RootLayout({
                         gtag('config', 'G-MP01NK9328');
                     `}
                 </Script>
-{/* Adsterra Social Bar Script */}
-        <Script
-          src="https://pl31333705.profitableratecpmnetwork.com/5f/ce/3b/5fce3bc70b03806308cc32d93f3339ad.js"
-          strategy="afterInteractive"
-        />
                 <Header />
                 <main className="flex-grow w-full">{children}</main>
                 <Footer />
