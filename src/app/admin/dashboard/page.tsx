@@ -7,13 +7,14 @@ import Link from 'next/link';
 import {
     PlusCircle, ExternalLink,
     RefreshCw, CheckCircle, AlertCircle, Eye,
-    Edit, Trash2, XCircle
+    Edit, Trash2, XCircle, UploadCloud, Loader2
 } from 'lucide-react';
 
 export default function AdminDashboard() {
     const [articles, setArticles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     // এডিট আইডি স্টেট
@@ -57,10 +58,11 @@ export default function AdminDashboard() {
         }
     };
 
+    // ১০০টির বেশি নিউজ ফ্রেচ করার জন্য লিমিট বাড়িয়ে দেওয়া হয়েছে
     const fetchArticles = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/news');
+            const res = await fetch('/api/news?limit=1000');
             const data = await res.json();
             if (data.success) {
                 setArticles(data.articles || []);
@@ -75,6 +77,39 @@ export default function AdminDashboard() {
     useEffect(() => {
         fetchArticles();
     }, []);
+
+    // ImgBB ফাইল আপলোড হ্যান্ডলার (সরাসরি ডিরেক্ট ছবি লিঙ্ক বের করবে)
+    const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingImage(true);
+        setMessage(null);
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=36564569009394d92b157100d0372745`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (data.success && data.data?.url) {
+                // ডিরেক্ট ছবি লিঙ্ক বসানো
+                setFeaturedImage(data.data.url);
+                setMessage({ type: 'success', text: 'Image uploaded successfully to ImgBB!' });
+            } else {
+                setMessage({ type: 'error', text: 'Failed to upload image. Please try again.' });
+            }
+        } catch (err) {
+            setMessage({ type: 'error', text: 'Image upload failed due to network error.' });
+        } finally {
+            setUploadingImage(false);
+        }
+    };
 
     const resetForm = () => {
         setEditingId(null);
@@ -95,7 +130,6 @@ export default function AdminDashboard() {
         setTitle(article.title || '');
         setSlug(article.slug || '');
         setCategory(article.category || 'U.S. News');
-        // সাব-ক্যাটাগরি রিস্টোর করা (উভয় ফিল্ড নেম সাপোর্ট করা হয়েছে)
         setSubCategory(article.sub_category || article.subcategory || '');
         setReporterName(article.author_name || article.reporter_name || '');
         setFeaturedImage(article.featured_image || '');
@@ -139,7 +173,7 @@ export default function AdminDashboard() {
             slug,
             category,
             sub_category: subCategory,
-            subcategory: subCategory, // উভয় ফরম্যাট যাতে ব্যাকএন্ড যেকোনো একটায় পেলে পায়
+            subcategory: subCategory,
             reporter_name: reporterName,
             author_name: reporterName,
             featured_image: featuredImage,
@@ -292,18 +326,47 @@ export default function AdminDashboard() {
                                 </select>
                             </div>
 
+                            {/* ইমেজ আপলোড ফিল্ড (ফাইল চুজ + ম্যানুয়াল URL দুটোই সাপোর্টেড) */}
+                            <div>
+                                <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">
+                                    Upload Featured Image (Direct ImgBB)
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <label className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 border border-dashed border-gray-400 rounded-xl cursor-pointer hover:bg-gray-100 transition text-xs font-bold text-gray-700">
+                                        {uploadingImage ? (
+                                            <>
+                                                <Loader2 size={16} className="animate-spin text-[#cc0000]" />
+                                                <span>Uploading Image...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UploadCloud size={16} className="text-[#cc0000]" />
+                                                <span>Choose Image File</span>
+                                            </>
+                                        )}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageFileUpload}
+                                            disabled={uploadingImage}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Featured Image URL</label>
                                 <input
                                     type="text"
                                     value={featuredImage}
                                     onChange={(e) => setFeaturedImage(e.target.value)}
-                                    placeholder="https://images.unsplash.com/..."
+                                    placeholder="https://i.ibb.co/..."
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#cc0000] outline-none"
                                 />
                             </div>
 
-                            <div>
+                            <div className="md:col-span-2">
                                 <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">Image Caption / Source (SEO Alt)</label>
                                 <input
                                     type="text"
