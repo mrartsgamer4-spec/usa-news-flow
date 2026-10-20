@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
             )
             .run();
 
-        // ব্যাকগ্রাউন্ডে Make.com ওয়েবহুকে ডেটা পাঠানোর নিরাপদ ফেচ রিকোয়েস্ট
+        // Make.com ওয়েবহুকে ডেটা পাঠানোর নিরাপদ ফেচ রিকোয়েস্ট
         try {
             await fetch('https://hook.eu1.make.com/rzscgwm5hipowmrx2lgr5wfgkwfraye2', {
                 method: 'POST',
