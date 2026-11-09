@@ -134,6 +134,16 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   const article = await fetchArticle(slug);
   if (!article) notFound();
 
+  // ভিজিটর এই পেজে প্রবেশ করলেই ডাটাবেজে ভিউ ১ বাড়িয়ে দেওয়ার নিরাপদ কমান্ড
+  try {
+    const db = getDb();
+    if (db && article.id) {
+      await db.prepare('UPDATE articles SET views = views + 1 WHERE id = ?').bind(article.id).run();
+    }
+  } catch (err) {
+    console.error('Failed to update view count:', err);
+  }
+
   const { upNext, mostPopular } = await fetchCnnFeed(article.id);
   const author = article.author_name || article.reporter_name || 'Editorial Staff';
   const baseUrl = siteConfig.url.replace(/\/+$/, '');
