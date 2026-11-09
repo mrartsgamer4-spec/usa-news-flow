@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
     PlusCircle, ExternalLink,
     RefreshCw, CheckCircle, AlertCircle, Eye,
-    Edit, Trash2, XCircle, UploadCloud, Loader2
+    Edit, Trash2, XCircle, UploadCloud, Loader2, BarChart2
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
         }
     };
 
-    // ১০০টির বেশি নিউজ ফ্রেচ করার জন্য লিমিট বাড়িয়ে দেওয়া হয়েছে
+    // ১০০টির বেশি নিউজ ফ্রেচ করার জন্য লিমিট বাড়িয়ে দেওয়া হয়েছে
     const fetchArticles = async () => {
         setLoading(true);
         try {
@@ -223,7 +223,7 @@ export default function AdminDashboard() {
                             <span className="w-3 h-7 bg-[#cc0000] inline-block rounded-sm"></span>
                             USA News Flow Editorial Dashboard
                         </h1>
-                        <p className="text-xs text-gray-500 font-semibold mt-1">Publish news, assign reporters, manage SEO and edit live articles.</p>
+                        <p className="text-xs text-gray-500 font-semibold mt-1">Publish news, assign reporters, manage SEO and track article views.</p>
                     </div>
                     <Link
                         href="/"
@@ -326,7 +326,7 @@ export default function AdminDashboard() {
                                 </select>
                             </div>
 
-                            {/* ইমেজ আপলোড ফিল্ড (ফাইল চুজ + ম্যানুয়াল URL দুটোই সাপোর্টেড) */}
+                            {/* ইমেজ আপলোড ফিল্ড */}
                             <div>
                                 <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5">
                                     Upload Featured Image (Direct ImgBB)
@@ -422,7 +422,7 @@ export default function AdminDashboard() {
                     </form>
                 </div>
 
-                {/* Published Articles List with Edit and Delete Buttons */}
+                {/* Published Articles List with Live View Counts */}
                 <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
                     <div className="flex items-center justify-between mb-6 border-b pb-3">
                         <h2 className="text-lg font-black text-gray-900 uppercase">
@@ -455,6 +455,10 @@ export default function AdminDashboard() {
                                                     {item.sub_category || item.subcategory}
                                                 </span>
                                             )}
+                                            {/* লাইভ ভিউ কাউন্ট ব্যাজ */}
+                                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded flex items-center gap-1">
+                                                <BarChart2 size={11} /> {item.views || 0} Views
+                                            </span>
                                         </div>
                                         <h3 className="font-bold text-sm sm:text-base text-gray-900 leading-snug">
                                             {item.title}
@@ -478,11 +482,11 @@ export default function AdminDashboard() {
                                         </Link>
 
                                         <button
-                                            onClick={() => handleEdit(item)}
+                                            onClick={() => handleEdit(item.id ? item : item)}
                                             className="p-2 text-emerald-600 hover:text-emerald-800 border border-emerald-100 rounded-lg hover:bg-emerald-50 transition"
                                             title="Edit News"
                                         >
-                                            <Edit size={16} />
+                                            <Edit size= {16} />
                                         </button>
 
                                         <button
