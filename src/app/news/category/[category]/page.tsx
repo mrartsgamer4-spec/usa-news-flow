@@ -1,177 +1,360 @@
 export const runtime = 'edge';
 
+
 import { Metadata } from 'next';
+
 import Link from 'next/link';
+
 import { getRequestContext } from '@cloudflare/next-on-pages';
+
 import { siteConfig } from '@/lib/siteConfig';
+
 import { getArticleUrl, getCategoryUrl } from '@/lib/urls';
+
 import { Clock, User } from 'lucide-react';
+
 import LiveScore from '@/components/news/LiveScore';
 
+
 interface CategoryPageProps {
+
     params: Promise<{
+
         category: string;
+
     }>;
+
     searchParams?: Promise<{
+
         sub?: string;
+
+        page?: string;
+
     }>;
+
 }
 
+
 function timeAgo(dateString?: string): string {
+
     if (!dateString) return 'Recently';
+
     const date = new Date(dateString);
+
     if (isNaN(date.getTime())) return 'Recently';
 
     const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+
     if (seconds < 60) return 'Just now';
+
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+
     return `${Math.floor(seconds / 86400)}d ago`;
+
 }
 
-async function getCategoryArticles(categorySlug: string, subCategory?: string) {
+
+async function getCategoryArticles(categorySlug: string, subCategory?: string, page: number = 1) {
+
     try {
+
         let db: any = null;
+
         try {
+
             const ctx = getRequestContext();
+
             db = ctx?.env?.DB;
+
         } catch (e) { }
+
         if (!db) db = (process.env as any).DB;
+
         if (!db) return [];
 
         // ইউআরএল স্লাগ ও স্পেস হ্যান্ডেল করার ক্লিন কি-ওয়ার্ড
+
         const cleanCat = decodeURIComponent(categorySlug).replace(/[-_.]/g, '%').trim();
 
         let query = `
-            SELECT * FROM articles 
-            WHERE (
-                REPLACE(REPLACE(LOWER(category), '.', ''), '-', ' ') LIKE LOWER(?) 
+
+            SELECT * FROM articles
+
+            WHERE status = 'published'
+
+            AND (
+
+                REPLACE(REPLACE(LOWER(category), '.', ''), '-', ' ') LIKE LOWER(?)
+
                 OR LOWER(category) LIKE LOWER(?)
+
             )
+
         `;
+
         const params: any[] = [`%${cleanCat}%`, `%${cleanCat}%`];
 
         if (subCategory && subCategory.trim() !== '') {
+
             const cleanSub = decodeURIComponent(subCategory).replace(/[-_]/g, ' ').trim();
+
             const wildcardSub = `%${cleanSub.replace(/\s+/g, '%')}%`;
 
             // D1-এ sub_category কলাম মিসিং থাকলেও কোনো এরর হবে না
+
             query += `
+
                 AND (
+
                     LOWER(tags) LIKE LOWER(?)
+
                     OR LOWER(tags) LIKE LOWER(?)
+
                     OR LOWER(title) LIKE LOWER(?)
+
                 )
+
             `;
+
             params.push(wildcardSub, `%${cleanSub}%`, `%${cleanSub}%`);
+
         }
 
-        query += ' ORDER BY created_at DESC LIMIT 50';
+        const safePage = Math.max(1, Math.floor(page) || 1);
+
+        const offset = (safePage - 1) * 10;
+
+        query += ` ORDER BY created_at DESC LIMIT 10 OFFSET ${offset}`;
 
         const stmt = db.prepare(query);
+
         const { results } = await stmt.bind(...params).all();
+
         return results || [];
+
     } catch (e) {
+
         console.error('Error fetching category articles from D1:', e);
+
         return [];
+
     }
+
 }
 
+
 export async function generateMetadata({ params, searchParams }: CategoryPageProps): Promise<Metadata> {
+
     const resolvedParams = await params;
+
     const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
     const categorySlug = resolvedParams?.category || '';
+
     const sub = resolvedSearchParams?.sub;
 
+    const page = Math.max(1, parseInt(resolvedSearchParams?.page || '1', 10) || 1);
+
     const baseTitle = decodeURIComponent(categorySlug).replace(/[-_]/g, ' ').toUpperCase();
+
     const title = sub ? `${decodeURIComponent(sub).replace(/[-_]/g, ' ').toUpperCase()} - ${baseTitle}` : baseTitle;
 
     return {
-        title: `${title} News | ${siteConfig.name}`,
+
+        title: page > 1 ? `${title} News - Page ${page}` : `${title} News`,
+
         description: `Latest news and updates in ${title}`,
+
         alternates: {
+
             canonical: `${siteConfig.url}${getCategoryUrl(categorySlug)}`,
+
         },
+
     };
+
 }
 
+
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+
     const resolvedParams = await params;
+
     const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
     const categorySlug = resolvedParams?.category || '';
+
     const subCategory = resolvedSearchParams?.sub;
-    const articles = await getCategoryArticles(categorySlug, subCategory);
+
+    const page = Math.max(1, parseInt(resolvedSearchParams?.page || '1', 10) || 1);
+
+    const articles = await getCategoryArticles(categorySlug, subCategory, page);
+
     const categoryTitle = decodeURIComponent(categorySlug).replace(/[-_]/g, ' ');
+
     const displaySubTitle = subCategory ? decodeURIComponent(subCategory).replace(/[-_]/g, ' ') : null;
 
     return (
+
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
             <div className="border-b-2 border-gray-900 pb-3 flex items-baseline justify-between">
+
                 <h1 className="text-2xl sm:text-3xl font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+
                     <span className="w-2.5 h-7 bg-[#cc0000] inline-block rounded-sm"></span>
+
                     {categoryTitle}
+
                     {displaySubTitle && (
+
                         <span className="text-red-600 font-bold text-lg sm:text-2xl ml-2 capitalize">
+
                             / {displaySubTitle}
+
                         </span>
+
                     )}
+
                 </h1>
-                <span className="text-xs font-bold text-gray-500 uppercase">{articles.length} Articles</span>
+
+                <span className="text-xs font-bold text-gray-500 uppercase">{articles.length} Articles{page > 1 ? ` • Page ${page}` : ''}</span>
+
             </div>
 
             {/* শুধু স্পোর্টস ক্যাটাগরিতে লাইভ স্কোর দেখাবে */}
+
             {categorySlug.toLowerCase() === 'sports' && <LiveScore />}
 
             {articles.length === 0 ? (
+
                 <div className="bg-white rounded-xl border border-gray-200 p-12 text-center my-6">
+
                     <p className="text-gray-500 font-medium">No articles found in {displaySubTitle || categoryTitle} yet.</p>
+
                 </div>
+
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                <>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
                     {articles.map((article: any) => (
+
                         <Link
+
                             key={article.id}
+
                             href={getArticleUrl(article.category, article.slug)}
+
                             prefetch={false}
-                            className="group bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
+
+                            className="group bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col
+justify-between"
+
                         >
+
                             {article.featured_image && (
+
                                 <div className="h-44 w-full overflow-hidden bg-gray-100">
+
                                     <img
+
                                         src={article.featured_image}
+
                                         alt={article.title}
+
                                         className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+
                                     />
+
                                 </div>
+
                             )}
+
                             <div className="p-4 flex flex-col flex-1">
+
                                 <span className="text-[11px] font-black text-[#cc0000] uppercase tracking-wider block mb-1">
+
                                     {article.category}
+
                                     {(article.sub_category || article.subcategory) && (
+
                                         <span className="text-gray-400 font-bold ml-1.5">
+
                                             • {article.sub_category || article.subcategory}
+
                                         </span>
+
                                     )}
+
                                 </span>
+
                                 <h2 className="font-bold text-sm sm:text-base text-gray-900 group-hover:text-[#cc0000] line-clamp-2 leading-snug mb-2">
+
                                     {article.title}
+
                                 </h2>
+
                                 <div className="mt-auto pt-3 border-t border-gray-100 text-xs text-gray-400 flex items-center justify-between">
+
                                     <span className="flex items-center gap-1 font-medium text-gray-600">
+
                                         <User size={12} className="text-[#cc0000]" />
+
                                         {article.author_name || 'Staff'}
+
                                     </span>
+
                                     <span className="flex items-center gap-1">
+
                                         <Clock size={11} />
+
                                         {timeAgo(article.published_at || article.created_at)}
+
                                     </span>
+
                                 </div>
+
                             </div>
+
                         </Link>
+
                     ))}
+
                 </div>
+
+                {articles.length === 10 && (
+
+                    <div className="flex justify-center pt-2">
+
+                        <Link
+
+                            href={`/news/category/${categorySlug}?page=${page + 1}${subCategory ? `&sub=${encodeURIComponent(subCategory)}` : ''}`}
+
+                            prefetch={false}
+
+                            className="bg-[#cc0000] text-white px-8 py-2.5 rounded-lg font-bold text-sm uppercase tracking-wide hover:bg-[#990000] transition shadow-sm"
+
+                        >
+
+                            Load More
+
+                        </Link>
+
+                    </div>
+
+                )}
+
+                </>
+
             )}
+
         </main>
+
     );
+
 }
