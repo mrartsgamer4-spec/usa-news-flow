@@ -121,7 +121,7 @@ async function getWeather(): Promise<WeatherData> {
 
         const res = await fetch(
 
-            'https://api.open-meteo.com/v1/forecast?latitude=40.7128&longitude=-74.0060&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FNew_York',
+            'https://api.open-meteo.com/v1/forecast?latitude=40.7128&longitude=-74.0060&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&temperature_unit=celsius&wind_speed_unit=kmh&timezone=America%2FNew_York',
 
             { next: { revalidate: 1800 }, signal: controller.signal }
 
@@ -477,7 +477,7 @@ export default async function Home() {
 
                                     <div>
 
-                                        <span className="text-3xl font-black text-gray-900">{weather.temperature}°F</span>
+                                        <span className="text-3xl font-black text-gray-900">{weather.temperature}°C</span>
 
                                         <span className="text-xs font-semibold text-gray-500 block">{weather.label}</span>
 
@@ -489,9 +489,9 @@ export default async function Home() {
 
                                     <p>Humidity: <span className="font-bold text-gray-900">{weather.humidity}%</span></p>
 
-                                    <p>Wind: <span className="font-bold text-gray-900">{weather.wind} mph</span></p>
+                                    <p>Wind: <span className="font-bold text-gray-900">{weather.wind} kmh</span></p>
 
-                                    <p>Feels like: <span className="font-bold text-gray-900">{weather.feelsLike}°F</span></p>
+                                    <p>Feels like: <span className="font-bold text-gray-900">{weather.feelsLike}°C</span></p>
 
                                 </div>
 
