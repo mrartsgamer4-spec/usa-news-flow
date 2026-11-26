@@ -154,7 +154,9 @@ const NAVIGATION_CONFIG = [
 
     { label: "Entertainment", href: "/news/category/entertainment" },
 
-    { label: "Opinion", href: "/news/category/opinion" }
+    { label: "Opinion", href: "/news/category/opinion" },
+
+    { label: "Jobs", href: "/jobs" }
 
 ];
 
